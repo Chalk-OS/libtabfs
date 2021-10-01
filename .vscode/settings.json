@@ -1,0 +1,25 @@
+{
+    "files.associations": {
+        "*.S": "gas",
+        "*.json": "json",
+        "libtabfs.h": "c",
+        "stdbool.h": "c",
+        "typeinfo": "cpp",
+        "array": "cpp",
+        "chrono": "cpp",
+        "compare": "cpp",
+        "functional": "cpp",
+        "istream": "cpp",
+        "ostream": "cpp",
+        "ratio": "cpp",
+        "tuple": "cpp",
+        "type_traits": "cpp",
+        "utility": "cpp",
+        "variant": "cpp",
+        "random": "c",
+        "limits": "c",
+        "semaphore": "c",
+        "valarray": "c",
+        "algorithm": "c"
+    }
+}

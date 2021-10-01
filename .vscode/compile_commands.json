@@ -1,0 +1,11 @@
+[
+{
+  "directory": "/home/mai/projects/osdev/tabfs/libtabfs",
+  "arguments": ["/usr/bin/gcc", "-c", "-m64", "-Iinclude", "-o", "build/.objs/specs/linux/x86_64/debug/specs/specs.cpp.o", "specs/specs.cpp"],
+  "file": "specs/specs.cpp"
+},
+{
+  "directory": "/home/mai/projects/osdev/tabfs/libtabfs",
+  "arguments": ["/usr/bin/gcc", "-c", "-m64", "-Iinclude", "-o", "build/.objs/test/linux/x86_64/debug/test.c.o", "test.c"],
+  "file": "test.c"
+}]
