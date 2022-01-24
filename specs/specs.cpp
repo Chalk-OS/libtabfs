@@ -1,76 +1,141 @@
 #include <cxxspec/cxxspec.hpp>
 
 extern "C" {
-    #define LIBTABFS_DEVICE_ARGS            dev_t __linux_dev_t
-    #define LIBTABFS_HEADER_DEVICE_FIELDS   dev_t __linux_dev_t;
-    #define LIBTABFS_DEVICE_ARGS_TO_HEADER(header)  header->__linux_dev_t = __linux_dev_t;
-
-    #define LIBTABFS_DEVICE_PARAMS(header)  header->__linux_dev_t
-
-    #define LIBTABFS_ALLOC(size)        malloc(size);
-    #define LIBTABFS_FREE(ptr, size)    free(ptr);
-
-    #define LIBTABFS_READ_DEVICE    my_device_read
-    #define LIBTABFS_WRITE_DEVICE   my_device_write
-
-    struct tabfs_header;
-    typedef struct tabfs_header* tabfs_header_t;
-    //#include <libtabfs.h>
-
-    uint8_t* example_disk;
-
-    void my_device_read(dev_t __linux_dev_t, long long lba_address, int offset, void* buffer, int bufferSize) {
-        printf("my_device_read(%ld, 0x%lx, 0x%x, %p, %d)\n", __linux_dev_t, lba_address, offset, buffer, bufferSize);
-        memcpy(buffer, example_disk + (lba_address * 512) + offset, bufferSize);
-    }
-    void my_device_write(dev_t __linux_dev_t, long long lba_address, int offset, void* buffer, int bufferSize) {}
-
-    #define LIBTABFS_IMPLEMENTATION
-    #include <libtabfs.h>
+    #include "libtabfs.h"
 }
 
-tabfs_header_t gHeader;
+#include "./utils.hpp"
+#include "./bridge_impl.hpp"
+
+libtabfs_volume_t* gVolume;
+
+void my_linkedlist_free(void* data) {}
 
 describe(libtabfs, $ {
-    explain("tabfs_new_header", $ {
+    explain("libtabfs_linkedlist", $ {
+        explain("libtabfs_linkedlist_create", $ {
+            it("should be create- & destroyable", _ {
+                libtabfs_linkedlist_t* list = libtabfs_linkedlist_create(my_linkedlist_free);
+                expect(list).to_neq(nullptr);
+                libtabfs_linkedlist_destroy(list);
+            });
+        });
+        explain("libtabfs_linkedlist_add", $ {
+            it("should can add entries", _ {
+                libtabfs_linkedlist_t* list = libtabfs_linkedlist_create(my_linkedlist_free);
+                expect(list).to_neq(nullptr);
+                cleanup([list] () {
+                    libtabfs_linkedlist_destroy(list);
+                });
+
+                expect(list->head).to_eq(nullptr);
+                libtabfs_linkedlist_add(list, NULL);
+                expect(list->head).to_neq(nullptr);
+            });
+        });
+        explain("libtabfs_linkedlist_remove", $ {
+            it("should remove entries", _ {
+                libtabfs_linkedlist_t* list = libtabfs_linkedlist_create(my_linkedlist_free);
+                expect(list).to_neq(nullptr);
+                cleanup([list] () {
+                    libtabfs_linkedlist_destroy(list);
+                });
+
+                libtabfs_linkedlist_add(list, (void*)0x1111);
+                libtabfs_linkedlist_add(list, (void*)0x2222);
+                libtabfs_linkedlist_add(list, (void*)0x3333);
+
+                libtabfs_linkedlist_entry_t* middle = list->head->next;
+                expect(middle).to_neq(nullptr);
+                expect(middle->data).to_eq((void*)0x2222);
+
+                libtabfs_linkedlist_remove(list, middle);
+
+                expect(list->head).to_neq(nullptr);
+                expect(list->head->data).to_eq((void*)0x1111);
+
+                expect(list->head->next).to_neq(nullptr);
+                expect(list->head->next->data).to_eq((void*)0x3333);
+            });
+            it("should remove an entry from the tail and setting tail accordingly", _ {
+                libtabfs_linkedlist_t* list = libtabfs_linkedlist_create(my_linkedlist_free);
+                expect(list).to_neq(nullptr);
+                cleanup([list] () {
+                    libtabfs_linkedlist_destroy(list);
+                });
+
+                libtabfs_linkedlist_add(list, (void*)0x1111);
+                libtabfs_linkedlist_add(list, (void*)0x2222);
+                libtabfs_linkedlist_add(list, (void*)0x3333);
+
+                libtabfs_linkedlist_entry_t* last = list->head->next->next;
+                expect(last).to_neq(nullptr);
+                expect(last->data).to_eq((void*)0x3333);
+
+                libtabfs_linkedlist_remove(list, last);
+
+                expect(list->head).to_neq(nullptr);
+                expect(list->head->data).to_eq((void*)0x1111);
+
+                expect(list->tail).to_neq(nullptr);
+                expect(list->tail->data).to_eq((void*)0x2222);
+            });
+        });
+    });
+
+    explain("libtabfs_new_volume", $ {
         it("should have a magic", _ {
-            expect((char*)gHeader->magic).to_eq((char*)"TABFS-28");
+            expect((char*)gVolume->magic).to_eq((char*)"TABFS-28");
         });
-        it("should have a bat on lba 0x1", _ {
-            expect(TABFS_LBA_48_TOI(gHeader->bat_LBA)).to_eq(0x1);
+        it("should have a bat on lba 0x2", _ {
+            expect(gVolume->bat_LBA).to_eq(0x2);
         });
-        it("should have the root table on lba 0x2", _ {
-            expect(TABFS_LBA_48_TOI(gHeader->root_LBA)).to_eq(0x2);
+        it("should have the root table on lba 0x3", _ {
+            expect(gVolume->root_LBA).to_eq(0x3);
+        });
+
+        explain("libtabfs_volume_get_label", $ {
+            it("should be 'This is an awesome volume!'", _ {
+                expect(libtabfs_volume_get_label(gVolume)).to_eq((char*)"This is an awesome volume!");
+            });
+        });
+
+        explain("libtabfs_volume_set_label", $ {
+            it("should be setable to 'Hello world!' & sync to disk", _ {
+                libtabfs_volume_set_label(gVolume, "Hello world!", true);
+                expect(libtabfs_volume_get_label(gVolume)).to_eq((char*)"Hello world!");
+                expect(memcmp(example_disk + 512 + 0x50, "Hello world!", 13)).to_eq(0);
+            });
         });
 
         explain("bat - first section", $ {
-            it("should be on lba 0x1", _ {
-                tabfs_bat_t bat = gHeader->__bat_root;
-                expect(bat->__lba).to_eq(0x1);
+            it("should be on lba 0x2", _ {
+                libtabfs_bat_t* bat = gVolume->__bat_root;
+                expect(bat->__lba).to_eq(0x2);
             });
             it("should have a block_count of 1", _ {
-                tabfs_bat_t bat = gHeader->__bat_root;
+                libtabfs_bat_t* bat = gVolume->__bat_root;
                 expect(bat->block_count).to_eq(1);
             });
-            it("should reference on the next section on lba 0x3", _ {
-                tabfs_bat_t bat = gHeader->__bat_root;
-                expect(bat->next_bat).to_eq(0x3);
+            it("should reference on the next section on lba 0x4", _ {
+                libtabfs_bat_t* bat = gVolume->__bat_root;
+                expect(bat->next_bat).to_eq(0x4);
             });
         });
 
         explain("bat - second section", $ {
             it("should be accessible through the first section", _ {
-                tabfs_bat_t bat = gHeader->__bat_root;
+                libtabfs_bat_t* bat = gVolume->__bat_root;
                 expect(bat->__next_bat).to_not_eq(nullptr);
             });
-            it("should be on lba 0x3", _ {
-                tabfs_bat_t bat = gHeader->__bat_root;
+            it("should be on lba 0x4", _ {
+                libtabfs_bat_t* bat = gVolume->__bat_root;
                 expect(bat->__next_bat).to_not_eq(nullptr);
                 bat = bat->__next_bat;
-                expect(bat->__lba).to_eq(0x3);
+                expect(bat->__lba).to_eq(0x4);
             });
             it("should have a block_count of 2", _ {
-                tabfs_bat_t bat = gHeader->__bat_root;
+                libtabfs_bat_t* bat = gVolume->__bat_root;
                 expect(bat->__next_bat).to_not_eq(nullptr);
                 bat = bat->__next_bat;
                 expect(bat->block_count).to_eq(2);
@@ -79,104 +144,205 @@ describe(libtabfs, $ {
 
     });
 
-    explain("tabfs_bat_isFree", $ {
+    explain("libtabfs_bat_isFree", $ {
         it("should have non-free blocks on 0x0 - 0x4", _ {
-            expect(tabfs_bat_isFree(gHeader, 0x0)).to_eq(false);
-            expect(tabfs_bat_isFree(gHeader, 0x1)).to_eq(false);
-            expect(tabfs_bat_isFree(gHeader, 0x2)).to_eq(false);
-            expect(tabfs_bat_isFree(gHeader, 0x3)).to_eq(false);
-            expect(tabfs_bat_isFree(gHeader, 0x4)).to_eq(false);
+            expect(libtabfs_bat_isFree(gVolume, 0x0)).to_eq(false);
+            expect(libtabfs_bat_isFree(gVolume, 0x1)).to_eq(false);
+            expect(libtabfs_bat_isFree(gVolume, 0x2)).to_eq(false);
+            expect(libtabfs_bat_isFree(gVolume, 0x3)).to_eq(false);
+            expect(libtabfs_bat_isFree(gVolume, 0x4)).to_eq(false);
+        });
+        it("should have free a block on 0x6", _ {
+            expect(libtabfs_bat_isFree(gVolume, 0x6)).to_eq(true);
         });
         it("should work accross bat regions", _ {
-            expect(tabfs_bat_isFree(gHeader, 0xfd0)).to_eq(true);
+            expect(libtabfs_bat_isFree(gVolume, 0xfd0 + 0x2)).to_eq(true);
         });
-        it("should create new bat regions if the current regions cannot hold the requested lba", _ {
-            expect(tabfs_bat_isFree(gHeader, 0xfd0 + 0x1fd0)).to_eq(true);
+        // it("should create new bat regions if the current regions cannot hold the requested lba", _ {
+        //     expect(libtabfs_bat_isFree(gVolume, 0xfd0 + 0x1fd0)).to_eq(true);
+        // });
+    });
+
+    explain("libtabfs_bat_allocateChainedBlocks", $ {
+        it("should allocate an range of 2 blocks on 0x6 - 0x7", _ {
+            expect(libtabfs_bat_allocateChainedBlocks(gVolume, 0x2)).to_eq(0x6);
+        });
+        it("should set 0x6 - 0x7 in bat to non-free", _ {
+            expect(libtabfs_bat_isFree(gVolume, 0x6)).to_eq(false);
+            expect(libtabfs_bat_isFree(gVolume, 0x7)).to_eq(false);
+        });
+    });
+
+    explain("libtabfs_bat_freeChainedBlocks", $ {
+        it("should set 0x6 - 0x7 in bat to free", _ {
+            expect(libtabfs_bat_isFree(gVolume, 0x6)).to_neq(true);
+            expect(libtabfs_bat_isFree(gVolume, 0x7)).to_neq(true);
+            libtabfs_bat_freeChainedBlocks(gVolume, 2, 0x6);
+            expect(libtabfs_bat_isFree(gVolume, 0x6)).to_eq(true);
+            expect(libtabfs_bat_isFree(gVolume, 0x7)).to_eq(true);
+        });
+    });
+
+    explain("libtabfs_create_dir", $ {
+        it("should create an directory entry as well as an entrytable on 0x6 - 0x7", _ {
+            libtabfs_entrytable_t* myDir_entrytable;
+            libtabfs_error err = libtabfs_create_dir(
+                gVolume->__root_table, "myDir",
+                { .set_uid = true, .user = { .exec = true } },
+                {}, 1, 2,
+                &myDir_entrytable
+            );
+            expect(err).to_eq(LIBTABFS_ERR_NONE);
+            expect(myDir_entrytable->__lba).to_eq(0x6);
+            expect(myDir_entrytable->__byteSize).to_eq(512 * 2);
+
+            libtabfs_entrytab_sync(gVolume->__root_table);
+
+            uint8_t buff[64] = {
+                0x18, 0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x02, 0x00,
+                0x00, 0x00, 0x06, 0x00, 0x00, 0x00, 0x00, 0x04, 0x00, 0x00, 0x6D, 0x79, 0x44, 0x69, 0x72, 0x00,
+                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+            };
+            expect(memcmp(example_disk + (512 * 0x3) + 64, buff, 64)).to_eq(0);
+        });
+    });
+
+    explain("libtabfs_create_chardevice", $ {
+        it("should create an device with id 0x1234 and flags 0x5678", _ {
+            libtabfs_error err = libtabfs_create_chardevice(
+                gVolume->__root_table, "myChrDev",
+                { .set_uid = true, .user = { .write = true } },
+                {}, 1, 2,
+                0x1234, 0x5678
+            );
+            expect(err).to_eq(LIBTABFS_ERR_NONE);
+
+            libtabfs_entrytab_sync(gVolume->__root_table);
+            // TODO: test the byteregion
+        });
+        it("should create an device with longname entry", _ {
+            libtabfs_error err = libtabfs_create_chardevice(
+                gVolume->__root_table, "123456789_123456789_123456789_123456789_123456789_123456789_",
+                { .set_uid = true, .user = { .exec = true } },
+                {}, 1, 2,
+                0x1234, 0x5678
+            );
+            expect(err).to_eq(LIBTABFS_ERR_NONE);
+
+            libtabfs_entrytab_sync(gVolume->__root_table);
+            // TODO: test the byteregion
+        });
+    });
+
+    // TODO: add an test to confirm that entry creation automatically creates an new section
+
+    explain("libtabfs_entrytab_traversetree", $ {
+        it("should get filenames in the current entrytable", _ {
+            libtabfs_entrytable_entry_t* entry = NULL;
+            libtabfs_error err = libtabfs_entrytab_traversetree(
+                gVolume->__root_table, "myDir", true, 1, 2, &entry, NULL, NULL
+            );
+            expect(err).to_eq(LIBTABFS_ERR_NONE);
+            expect(entry->flags.type).to_eq(LIBTABFS_ENTRYTYPE_DIR);
+        });
+        it("should find a file in subdirectories", _ {
+            libtabfs_entrytable_entry_t* mydir_entry = NULL;
+            libtabfs_error err = libtabfs_entrytab_traversetree(
+                gVolume->__root_table, "myDir", true, 1, 2, &mydir_entry, NULL, NULL
+            );
+            expect(err).to_eq(LIBTABFS_ERR_NONE);
+            expect(mydir_entry->flags.type).to_eq(LIBTABFS_ENTRYTYPE_DIR);
+
+            err = libtabfs_create_chardevice(
+                libtabfs_get_entrytable(gVolume, mydir_entry->data.dir.lba, mydir_entry->data.dir.size), "testChrDev",
+                { .set_uid = true, .user = { .write = true } },
+                {}, 1, 2,
+                0x1234, 0x5678
+            );
+            expect(err).to_eq(LIBTABFS_ERR_NONE);
+
+            libtabfs_entrytable_entry_t* entry = NULL;
+            const char* cpath = "myDir/testChrDev";
+
+            char* path = (char*) calloc(strlen(cpath) + 1, sizeof(char));
+            cleanup([path] { free(path); });
+            strcpy(path, cpath);
+
+            err = libtabfs_entrytab_traversetree(
+                gVolume->__root_table, path, true, 1, 2, &entry, NULL, NULL
+            );
+            expect(err).to_eq(LIBTABFS_ERR_NONE);
+            expect(entry->flags.type).to_eq(LIBTABFS_ENTRYTYPE_DEV_CHR);
+        });
+        it("should find a file with relative path", _ {
+            libtabfs_entrytable_entry_t* mydir_entry = NULL;
+            libtabfs_error err = libtabfs_entrytab_traversetree(
+                gVolume->__root_table, "myDir", true, 1, 2, &mydir_entry, NULL, NULL
+            );
+            expect(err).to_eq(LIBTABFS_ERR_NONE);
+            expect(mydir_entry->flags.type).to_eq(LIBTABFS_ENTRYTYPE_DIR);
+
+            libtabfs_entrytable_entry_t* entry = NULL;
+            err = libtabfs_entrytab_traversetree(
+                libtabfs_get_entrytable(gVolume, mydir_entry->data.dir.lba, mydir_entry->data.dir.size),
+                "../myChrDev", true, 1, 2, &entry, NULL, NULL
+            );
+            expect(err).to_eq(LIBTABFS_ERR_NONE);
+            expect(entry->flags.type).to_eq(LIBTABFS_ENTRYTYPE_DEV_CHR);
+        });
+        it("can follow symlinks if asked to", _ {
+
+            libtabfs_entrytable_entry_t* mydir_entry = NULL;
+            libtabfs_error err = libtabfs_entrytab_traversetree(
+                gVolume->__root_table, "myDir", 1, 2, true, &mydir_entry, NULL, NULL
+            );
+            expect(err).to_eq(LIBTABFS_ERR_NONE);
+            expect(mydir_entry->flags.type).to_eq(LIBTABFS_ENTRYTYPE_DIR);
+
+            err = libtabfs_create_symlink(
+                libtabfs_get_entrytable(gVolume, mydir_entry->data.dir.lba, mydir_entry->data.dir.size), "testLink",
+                { .set_uid = true, .user = { .exec = true } },
+                {}, 1, 2,
+                "../myChrDev"
+            );
+            expect(err).to_eq(LIBTABFS_ERR_NONE);
+
+            libtabfs_entrytable_entry_t* entry = NULL;
+            const char* cpath = "myDir/testLink";
+
+            char* path = (char*) calloc(strlen(cpath) + 1, sizeof(char));
+            cleanup([path] { free(path); });
+            strcpy(path, cpath);
+
+            err = libtabfs_entrytab_traversetree(
+                gVolume->__root_table, path, true, 1, 2, &entry, NULL, NULL
+            );
+            expect(err).to_eq(LIBTABFS_ERR_NONE);
+            expect(entry->flags.type).to_eq(LIBTABFS_ENTRYTYPE_DEV_CHR);
+
+            err = libtabfs_entrytab_traversetree(
+                gVolume->__root_table, path, false, 1, 2, &entry, NULL, NULL
+            );
+            expect(err).to_eq(LIBTABFS_ERR_NONE);
+            expect(entry->flags.type).to_eq(LIBTABFS_ENTRYTYPE_SYMLINK);
         });
     });
 });
 
-void dump_mem(uint8_t* mem, int size) {
-    printf("\e[32m-- 00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F\e[0m");
-    for (int i = 0; i < size; i++) {
-        if ((i % 16) == 0) {
-            printf("\n\e[32m%02x\e[0m ", i / 16);
-        }
-        printf("%02x ", mem[i]);
-    }
-    printf("\n");
-}
-
-void write_i8(void* dest, uint8_t i) {
-    memcpy(dest, &i, sizeof(uint8_t));
-}
-void write_i16(void* dest, uint16_t i) {
-    memcpy(dest, &i, sizeof(uint16_t));
-}
-void write_i32(void* dest, uint32_t i) {
-    memcpy(dest, &i, sizeof(uint32_t));
-}
-void write_i48(void* dest, uint64_t i) {
-    memcpy(dest, &i, 6);
-}
-void write_i64(void* dest, uint64_t i) {
-    memcpy(dest, &i, sizeof(uint64_t));
-}
-
-#define WRAP_WRITE(name, type) \
-    void write_##name(long long lba, int offset, type i) { write_##name(example_disk + (lba * 512) + offset, i); }
-WRAP_WRITE(i8, uint8_t)
-WRAP_WRITE(i16, uint16_t)
-WRAP_WRITE(i32, uint32_t)
-WRAP_WRITE(i48, uint64_t)
-WRAP_WRITE(i64, uint64_t)
-
-void write_mem(long long lba, int offset, void* mem, int n) {
-    memcpy(example_disk + (lba * 512) + offset, mem, n);
-}
-void write_clear(long long lba, int offset, uint8_t c, int n) {
-    memset(example_disk + (lba * 512) + offset, c, n);
-}
-
-void init_example_disk() {
-    // init the example disk
-    example_disk = (uint8_t*) calloc( 512 * 5, sizeof(uint8_t) );
-
-    // write header
-    {
-        memcpy(example_disk + 0x1BD, "TABFS-28", 9);    // magic
-        write_i48(example_disk + 0x1ED, 0x1);   // bat LBA
-        write_i8(example_disk + 0x1F3, 1);      // blockSize
-        write_i48(example_disk + 0x1F4, 0x2);   // root_LBA
-        write_i32(example_disk + 0x1FA, 0);     // root_size
-        write_i16(example_disk + 0x1FE, 0xAA55);
-    }
-
-    // write bat
-    {
-        write_i32(0x1, 0, 0x3);
-        write_i16(0x1, 4, 1);
-        write_clear(0x1, 6, 0, 512 - 6);
-        // set first 3 blocks as taken
-        write_i8(0x1, 6, 0b11111000);
-
-        write_i32(0x3, 0, 0);
-        write_i16(0x3, 4, 2);
-        write_clear(0x3, 6, 0, 1024 - 6);
-    }
-}
-
 int main(int argc, char** argv) {
     init_example_disk();
 
-    //dump_mem(example_disk, 512);
-    //dump_mem(example_disk + 512, 512);
+    dev_t* dev_data = (dev_t*) calloc(1, sizeof(dev_data));
+    *dev_data = 0x1234;
 
-    gHeader = tabfs_new_header((dev_t) 0, 0);
+    libtabfs_error err = libtabfs_new_volume(dev_data, 0, true, &gVolume);
+    if (err != LIBTABFS_ERR_NONE) {
+        printf("Error while calling libtabfs_new_volume(): %s (%d)\n", libtabfs_errstr(err), err);
+        return 0;
+    }
 
-    //dump_mem((uint8_t*)gHeader, sizeof(tabfs_header));
-    printf("gHeader->__bat_root: %p\n", gHeader->__bat_root);
-    dump_mem((uint8_t*)gHeader->__bat_root, sizeof(tabfs_bat));
+    dump_mem((uint8_t*)gVolume->__bat_root, sizeof(libtabfs_bat));
 
     // run specs
     cxxspec::runSpecs(--argc, ++argv);

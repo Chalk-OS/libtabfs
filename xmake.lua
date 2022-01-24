@@ -4,7 +4,7 @@ add_requires("cxxspec")
 
 target("libtabfs")
     set_kind("static")
-    --add_files("src/*.c")
+    add_files("src/*.c")
     add_installfiles("include/(**/*.h)", {prefixdir = "include/libtabfs"})
     add_includedirs("include", {public = true})
 

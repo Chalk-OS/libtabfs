@@ -1,11 +1,21 @@
 [
 {
   "directory": "/home/mai/projects/osdev/tabfs/libtabfs",
-  "arguments": ["/usr/bin/gcc", "-c", "-m64", "-Iinclude", "-o", "build/.objs/specs/linux/x86_64/debug/specs/specs.cpp.o", "specs/specs.cpp"],
-  "file": "specs/specs.cpp"
+  "arguments": ["/usr/bin/gcc", "-c", "-m64", "-Iinclude", "-DDEBUG", "-o", "build/.objs/libtabfs/linux/x86_64/debug/src/libtabfs.c.o", "src/libtabfs.c"],
+  "file": "src/libtabfs.c"
+},
+{
+  "directory": "/home/mai/projects/osdev/tabfs/libtabfs",
+  "arguments": ["/usr/bin/gcc", "-c", "-m64", "-Iinclude", "-DDEBUG", "-o", "build/.objs/libtabfs/linux/x86_64/debug/src/linkedlist.c.o", "src/linkedlist.c"],
+  "file": "src/linkedlist.c"
 },
 {
   "directory": "/home/mai/projects/osdev/tabfs/libtabfs",
   "arguments": ["/usr/bin/gcc", "-c", "-m64", "-Iinclude", "-o", "build/.objs/test/linux/x86_64/debug/test.c.o", "test.c"],
   "file": "test.c"
+},
+{
+  "directory": "/home/mai/projects/osdev/tabfs/libtabfs",
+  "arguments": ["/usr/bin/gcc", "-c", "-m64", "-Iinclude", "-o", "build/.objs/specs/linux/x86_64/debug/specs/specs.cpp.o", "specs/specs.cpp"],
+  "file": "specs/specs.cpp"
 }]

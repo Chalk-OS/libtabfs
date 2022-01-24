@@ -1,5 +1,6 @@
 {
     "files.associations": {
+        "*.h": "c",
         "*.S": "gas",
         "*.json": "json",
         "libtabfs.h": "c",
@@ -20,6 +21,13 @@
         "limits": "c",
         "semaphore": "c",
         "valarray": "c",
-        "algorithm": "c"
+        "algorithm": "c",
+        "typeindex": "cpp",
+        "hash_map": "c",
+        "bitset": "c",
+        "string_view": "c",
+        "initializer_list": "c",
+        "regex": "c",
+        "memory_resource": "c"
     }
 }
