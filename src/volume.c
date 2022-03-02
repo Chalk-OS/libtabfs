@@ -47,7 +47,7 @@ libtabfs_error libtabfs_new_volume(void* dev_data, long long lba_address, bool a
     // store the device arguments into the volume
     volume->__dev_data = dev_data;
     volume->__lba = LIBTABFS_LBA48_TO_LBA28(header.info_LBA);
-    volume->__table_cache = libtabfs_linkedlist_create( libtabfs_entrytable_destroy );
+    volume->__table_cache = libtabfs_linkedlist_create( libtabfs_entrytable_cachefree_callback );
 
     *volume_out = volume;
 
@@ -75,6 +75,13 @@ void libtabfs_volume_sync(libtabfs_volume_t* volume) {
 
     // sync all bats
     libtabfs_bat_sync(volume->__bat_root);
+
+    // sync all entrytables
+    libtabfs_linkedlist_entry_t* tablecache_entry = volume->__table_cache->head;
+    while (tablecache_entry != NULL) {
+        libtabfs_entrytable_sync(tablecache_entry->data);
+        tablecache_entry = tablecache_entry->next;
+    }
 }
 
 libtabfs_error libtabfs_volume_set_label(libtabfs_volume_t* volume, char* label, bool sync) {

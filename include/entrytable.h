@@ -206,18 +206,33 @@ libtabfs_entrytable_t* libtabfs_create_entrytable(
 );
 
 /**
- * @brief destroys / frees / unloads an entrytable section
+ * @brief internal function; called when an entry inside the cache needs to be free'd
+ * 
+ * @param entrytable the entrytable section to free
+ */
+void libtabfs_entrytable_cachefree_callback(libtabfs_entrytable_t* entrytable);
+
+/**
+ * @brief destroys / frees / unloads an entrytable section (does NOT remove it from disk!)
  * 
  * @param entrytable the entrytable section to destroy
  */
 void libtabfs_entrytable_destroy(libtabfs_entrytable_t* entrytable);
 
 /**
+ * @brief removes an entrytable section from disk and unloads it;
+ * does not update any links, so make sure to update them yourself!
+ * 
+ * @param entrytable the entrytable section to remove
+ */
+void libtabfs_entrytable_remove(libtabfs_entrytable_t* entrytable);
+
+/**
  * @brief writes an entrytable section to disk
  * 
  * @param entrytable the entrytable section to sync to disk
  */
-void libtabfs_entrytab_sync(libtabfs_entrytable_t* entrytable);
+void libtabfs_entrytable_sync(libtabfs_entrytable_t* entrytable);
 
 //--------------------------------------------------------------------------------
 // Helper
@@ -309,6 +324,25 @@ libtabfs_error libtabfs_entrytab_findfree(
     libtabfs_entrytable_t** entrytable_out,
     int* offset_out
 );
+
+/**
+ * @brief counts all valid entries in an entrytable
+ * 
+ * @param entrytable the entrytable to start counting from
+ * @param skip_longnames if set to true, longname entries will not be counted
+ * @return the count of entries found
+ */
+libtabfs_error libtabfs_entrytable_count_entries(libtabfs_entrytable_t* entrytable, bool skip_longnames);
+
+/**
+ * @brief gets the name from an entry; if the entry has an longname, its content is used
+ * 
+ * @param volume the volume to operate on
+ * @param entry the entry to get the name of
+ * @param name_out pointer which will be set to the name of the entry; either the embedded name, or the content of an longname entry
+ * @return LIBTABFS_ERR_NONE if the operation was successfull; other errorcode otherwise
+ */
+libtabfs_error libtabfs_entry_get_name(libtabfs_volume_t* volume, libtabfs_entrytable_entry_t* entry, char** name_out);
 
 //--------------------------------------------------------------------------------
 // Find entrys inside an entrytable

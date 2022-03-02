@@ -17,6 +17,8 @@ const char* libtabfs_errstr(libtabfs_error error) {
         case LIBTABFS_ERR_NAME_TOLONG: return "name to long";
         case LIBTABFS_ERR_IS_NO_DIR: return "entry is no directory";
         case LIBTABFS_ERR_NO_PERM: return "no permission";
+        case LIBTABFS_ERR_DIR_FULL: return "directory is full";
+        case LIBTABFS_ERR_NOT_FOUND: return "could not find entry";
         default: return "unknown error code";
     }
 }

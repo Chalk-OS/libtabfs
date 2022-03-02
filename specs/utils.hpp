@@ -19,11 +19,4 @@ WRAP_WRITE(i64, uint64_t)
 void write_mem(long long lba, int offset, void* mem, int n);
 void write_clear(long long lba, int offset, uint8_t c, int n);
 
-void dump_mem(uint8_t* mem, int size);
-
-extern "C" {
-    #include "libtabfs.h"
-}
-void dump_bat_region(libtabfs_bat_t* bat);
-void dump_entrytable_cache(libtabfs_volume_t* volume);
-void dump_entrytable_region(libtabfs_entrytable_t* entrytable);
+#include "dump.hpp"

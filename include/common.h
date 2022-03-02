@@ -44,6 +44,8 @@ typedef unsigned int libtabfs_error;
 #define LIBTABFS_ERR_NAME_TOLONG    8
 #define LIBTABFS_ERR_IS_NO_DIR      9
 #define LIBTABFS_ERR_NO_PERM        10
+#define LIBTABFS_ERR_DIR_FULL       11
+#define LIBTABFS_ERR_NOT_FOUND      12
 
 /**
  * @brief converts an error number into an error string

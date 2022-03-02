@@ -4,7 +4,7 @@
 #include "volume.h"
 #include "bat.h"
 
-#define LIBTABFS_BAT_DATAOFF   LIBTABFS_PTR_SIZE * 2 + sizeof(libtabfs_lba_28_t)
+#define LIBTABFS_BAT_DATAOFF   (LIBTABFS_PTR_SIZE * 2) + sizeof(libtabfs_lba_28_t)
 
 libtabfs_bat_t* libtabfs_load_bat(libtabfs_volume_t* volume, libtabfs_lba_28_t bat_addr) {
     int s = volume->blockSize;
@@ -75,7 +75,7 @@ void libtabfs_bat_flush_to_disk(libtabfs_bat_t* bat) {
     libtabfs_write_device(
         bat->__volume->__dev_data,
         bat->__lba, bat->__volume->flags.absolute_lbas, 0,
-        bat + LIBTABFS_BAT_DATAOFF,
+        ((void*)bat) + LIBTABFS_BAT_DATAOFF,
         blockSize_bytes * bat->block_count
     );
 }
@@ -122,7 +122,6 @@ libtabfs_bat_t* libtabfs_bat_getBatRegion(libtabfs_volume_t* volume, libtabfs_lb
 }
 
 libtabfs_error libtabfs_bat_are_blocks_free(libtabfs_bat_t* bat, int bytePos, int bitPos, unsigned int count) {
-
     // fist check the remaining range of the start byte
     for (;bitPos < 8; bitPos++) {
         if ((bat->data[bytePos] & (0x80 >> bitPos)) == 0) {
@@ -138,6 +137,7 @@ libtabfs_error libtabfs_bat_are_blocks_free(libtabfs_bat_t* bat, int bytePos, in
 
     // count is not depleted yet? begin checking remaining bytes
     int bytecount = bat->__volume->blockSize - 6 + ((bat->block_count - 1) * bat->__volume->blockSize);
+    bytePos += 1;   // add one to the bytecount since we checked above
     for (; bytePos < bytecount; bytePos++) {
         for (int j = 0; j < 8; j++) {
             if ((bat->data[bytePos] & (0x80 >> j)) == 0) {
@@ -169,6 +169,7 @@ void libtabfs_bat_mark_range(libtabfs_bat_t* bat, int bytePos, int bitPos, unsig
     }
 
     int bytecount = bat->__volume->blockSize - 6 + ((bat->block_count - 1) * bat->__volume->blockSize);
+    bytePos += 1;
     for (; bytePos < bytecount; bytePos++) {
         for (int j = 0; j < 8; j++) {
             bat->data[bytePos] |= (0x80 >> j);
@@ -190,6 +191,7 @@ void libtabfs_bat_clear_range(libtabfs_bat_t* bat, int bytePos, int bitPos, unsi
     }
 
     int bytecount = bat->__volume->blockSize - 6 + ((bat->block_count - 1) * bat->__volume->blockSize);
+    bytePos += 1;
     for (; bytePos < bytecount; bytePos++) {
         for (int j = 0; j < 8; j++) {
             bat->data[bytePos] &= ~(0x80 >> j);
@@ -246,8 +248,14 @@ libtabfs_lba_28_t libtabfs_bat_allocateChainedBlocks(libtabfs_volume_t* volume, 
 
 void libtabfs_bat_freeChainedBlocks(libtabfs_volume_t* volume, unsigned short count, libtabfs_lba_28_t lba) {
     if (lba < volume->bat_start_LBA || lba > volume->max_LBA) {
+        #ifdef LIBTABFS_DEBUG_PRINTF
+            printf("[libtabfs_bat_freeChainedBlocks] lba: 0x%x is below bat_start_LBA or byond max_LBA\n", lba);
+        #endif
         return;
     }
+    #ifdef LIBTABFS_DEBUG_PRINTF
+        printf("[libtabfs_bat_freeChainedBlocks] lba: 0x%x | count: %d\n", lba, count);
+    #endif
 
     libtabfs_bat_t* bat = libtabfs_bat_getBatRegion(volume, lba);
     if (bat == NULL) { return; }

@@ -196,7 +196,7 @@ describe(libtabfs, $ {
             expect(myDir_entrytable->__lba).to_eq(0x6);
             expect(myDir_entrytable->__byteSize).to_eq(512 * 2);
 
-            libtabfs_entrytab_sync(gVolume->__root_table);
+            libtabfs_entrytable_sync(gVolume->__root_table);
 
             uint8_t buff[64] = {
                 0x18, 0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -218,7 +218,7 @@ describe(libtabfs, $ {
             );
             expect(err).to_eq(LIBTABFS_ERR_NONE);
 
-            libtabfs_entrytab_sync(gVolume->__root_table);
+            libtabfs_entrytable_sync(gVolume->__root_table);
             // TODO: test the byteregion
         });
         it("should create an device with longname entry", _ {
@@ -230,7 +230,7 @@ describe(libtabfs, $ {
             );
             expect(err).to_eq(LIBTABFS_ERR_NONE);
 
-            libtabfs_entrytab_sync(gVolume->__root_table);
+            libtabfs_entrytable_sync(gVolume->__root_table);
             // TODO: test the byteregion
         });
     });

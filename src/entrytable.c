@@ -65,9 +65,14 @@ libtabfs_entrytable_t* libtabfs_create_entrytable(
     return entrytable;
 }
 
+void libtabfs_entrytable_cachefree_callback(libtabfs_entrytable_t* entrytable) {
+    libtabfs_entrytable_sync(entrytable);
+    libtabfs_free(entrytable, LIBTABFS_ENTRYTABLE_DATAOFFSET + entrytable->__byteSize);
+}
+
 void libtabfs_entrytable_destroy(libtabfs_entrytable_t* entrytable) {
     // sync the entrytable section one last time to disk
-    libtabfs_entrytab_sync(entrytable);
+    libtabfs_entrytable_sync(entrytable);
 
     // removes the entry from the tablecache
     libtabfs_linkedlist_remove_data(entrytable->__volume->__table_cache, entrytable);
@@ -75,7 +80,17 @@ void libtabfs_entrytable_destroy(libtabfs_entrytable_t* entrytable) {
     libtabfs_free(entrytable, LIBTABFS_ENTRYTABLE_DATAOFFSET + entrytable->__byteSize);
 }
 
-void libtabfs_entrytab_sync(libtabfs_entrytable_t* entrytable) {
+void libtabfs_entrytable_remove(libtabfs_entrytable_t* entrytable) {
+    libtabfs_bat_freeChainedBlocks(
+        entrytable->__volume,
+        entrytable->__byteSize / entrytable->__volume->blockSize,
+        entrytable->__lba
+    );
+    libtabfs_linkedlist_remove_data(entrytable->__volume->__table_cache, entrytable);
+    libtabfs_free(entrytable, LIBTABFS_ENTRYTABLE_DATAOFFSET + entrytable->__byteSize);
+}
+
+void libtabfs_entrytable_sync(libtabfs_entrytable_t* entrytable) {
     libtabfs_write_device(
         entrytable->__volume->__dev_data,
         entrytable->__lba, entrytable->__volume->flags.absolute_lbas, 0,
@@ -92,6 +107,10 @@ void libtabfs_fileflags_to_entry(libtabfs_fileflags_t fileflags, libtabfs_entryt
     entry->flags.set_gid = fileflags.set_gid;
     entry->flags.sticky = fileflags.sticky;
 
+    // first clean rawflags from old acl
+    entry->rawflags &= ~(0b1111111100000001);
+
+    // set acl
     entry->rawflags |= (fileflags.raw_user & 0b00000100) >> 2;
     entry->rawflags |= (fileflags.raw_user & 0b00000011) << (6 + 8);
 
@@ -106,7 +125,7 @@ bool libtabfs_check_perm(libtabfs_entrytable_entry_t* entry, unsigned int userid
     else if (userid == entry->group_id && (LIBTABFS_TAB_ENTRY_ACLGRP(entry) & perm)) {
         return true;
     }
-    else if (entry->rawflags & (LIBTABFS_TAB_ENTRY_ACLOTH(entry) & perm)) {
+    else if ((LIBTABFS_TAB_ENTRY_ACLOTH(entry) & perm)) {
         return true;
     }
     return false;
@@ -224,7 +243,47 @@ libtabfs_error libtabfs_entrytab_findfree(
 
         return LIBTABFS_ERR_NONE;
     }
-    return LIBTABFS_ERR_GENERIC;
+    return LIBTABFS_ERR_DIR_FULL;
+}
+
+libtabfs_error libtabfs_entrytable_count_entries(libtabfs_entrytable_t* entrytable, bool skip_longnames) {
+    int count = 0;
+
+    int entryCount = entrytable->__byteSize / 64;
+    for (int i = 1; i < entryCount; i++) {
+        libtabfs_entrytable_entry_t* entry = &(entrytable->entries[i]);
+        if (skip_longnames && entry->flags.type == LIBTABFS_ENTRYTYPE_LONGNAME) {
+            continue;
+        }
+        if (entry->flags.type != LIBTABFS_ENTRYTYPE_UNKNOWN) {
+            count += 1;
+        }
+    }
+
+    libtabfs_entrytable_tableinfo_t* tabinfo = &( entrytable->entries[0] );
+    if (tabinfo->next_size != 0 && !LIBTABFS_IS_INVALID_LBA28(tabinfo->next_lba)) {
+        libtabfs_entrytable_t* next_section = libtabfs_get_entrytable(entrytable->__volume, tabinfo->next_lba, tabinfo->next_size);
+        count += libtabfs_entrytable_count_entries(next_section, skip_longnames);
+    }
+    return LIBTABFS_ERR_NONE;
+}
+
+libtabfs_error libtabfs_entry_get_name(libtabfs_volume_t* volume, libtabfs_entrytable_entry_t* entry, char** name_out) {
+    if (name_out == NULL) { return LIBTABFS_ERR_ARGS; }
+
+    if (entry->longname_data.longname_identifier == 0x00) {
+        *name_out = entry->name;
+        return LIBTABFS_ERR_NONE;
+    }
+
+    libtabfs_entrytable_t* tab = libtabfs_get_entrytable(volume, entry->longname_data.longname_lba, entry->longname_data.longname_lba_size);
+    libtabfs_entrytable_longname_t* lne = &( tab->entries[entry->longname_data.longname_offset] );
+    if (lne->flags.type != LIBTABFS_ENTRYTYPE_LONGNAME) {
+        return LIBTABFS_ERR_GENERIC;
+    }
+
+    *name_out = lne->name;
+    return LIBTABFS_ERR_NONE;
 }
 
 //--------------------------------------------------------------------------------
@@ -367,6 +426,10 @@ libtabfs_error libtabfs_entrytab_traversetree(
                 return err;
             }
 
+            if (*entry_out == NULL) {
+                return LIBTABFS_ERR_NOT_FOUND;
+            }
+
             if (follow_symlink && (*entry_out)->flags.type == LIBTABFS_ENTRYTYPE_SYMLINK) {
                 err = libtabfs_entrytab_getsymlinktarget(entrytable, *entry_out, userid, groupid, entry_out, entrytable_out, offset_out);
             }
@@ -381,6 +444,10 @@ libtabfs_error libtabfs_entrytab_traversetree(
 
             if (err != LIBTABFS_ERR_NONE) {
                 return err;
+            }
+
+            if (*entry_out == NULL) {
+                return LIBTABFS_ERR_NOT_FOUND;
             }
 
             if (follow_symlink && (*entry_out)->flags.type == LIBTABFS_ENTRYTYPE_SYMLINK) {
@@ -486,6 +553,9 @@ libtabfs_error libtabfs_create_dir(
     if (LIBTABFS_IS_INVALID_LBA28(entrytable_lba)) {
         return LIBTABFS_ERR_DEVICE_NOSPACE;
     }
+    #ifdef LIBTABFS_DEBUG_PRINTF
+        printf("[libtabfs_create_dir] entrytable_lba: 0x%X\n", entrytable_lba);
+    #endif
 
     int size = 2 * entrytable->__volume->blockSize;
 
