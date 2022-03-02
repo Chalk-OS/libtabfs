@@ -235,6 +235,94 @@ describe(libtabfs, $ {
         });
     });
 
+    explain("libtabfs_create_continuousfile", $ {
+        it("should create an file of the size 128", _ {
+            libtabfs_entrytable_entry_t* entry = NULL;
+            libtabfs_error err = libtabfs_create_continuousfile(
+                gVolume->__root_table, "myContinuousFile",
+                { .set_uid = true, .user = { .write = true } },
+                {}, 1, 2,
+                false,  // isKernel
+                128,    // size
+                &entry
+            );
+            expect(err).to_eq(LIBTABFS_ERR_NONE);
+
+            libtabfs_entrytable_sync(gVolume->__root_table);
+        });
+    });
+
+    explain("libtabfs_read_file", $ {
+        explain("continuousfile", $ {
+            it("should be able to read 128 out of 128 bytes", _ {
+                libtabfs_entrytable_entry_t* entry = NULL;
+                libtabfs_error err = libtabfs_entrytab_traversetree(
+                    gVolume->__root_table, "myContinuousFile", false,
+                    1, 2, &entry, NULL, NULL
+                );
+                expect(err).to_eq(LIBTABFS_ERR_NONE);
+
+                unsigned long int bytes_read = 0;
+                unsigned char buf[128];
+
+                err = libtabfs_read_file(
+                    gVolume, entry, 0, 128, buf, &bytes_read
+                );
+                expect(err).to_eq(LIBTABFS_ERR_NONE);
+                expect(bytes_read).to_eq(128);
+            });
+            it("should only read 127 when reading any amount from offset 1", _ {
+                libtabfs_entrytable_entry_t* entry = NULL;
+                libtabfs_error err = libtabfs_entrytab_traversetree(
+                    gVolume->__root_table, "myContinuousFile", false,
+                    1, 2, &entry, NULL, NULL
+                );
+                expect(err).to_eq(LIBTABFS_ERR_NONE);
+
+                unsigned long int bytes_read = 0;
+                unsigned char buf[128];
+
+                err = libtabfs_read_file(
+                    gVolume, entry, 1, 128, buf, &bytes_read
+                );
+                expect(err).to_eq(LIBTABFS_ERR_NONE);
+                expect(bytes_read).to_eq(127);
+            });
+        });
+    });
+
+    explain("libtabfs_write_file", $ {
+        explain("continousfile", $ {
+            it("should be able to write 11 bytes", _ {
+                libtabfs_entrytable_entry_t* entry = NULL;
+                libtabfs_error err = libtabfs_entrytab_traversetree(
+                    gVolume->__root_table, "myContinuousFile", false,
+                    1, 2, &entry, NULL, NULL
+                );
+                expect(err).to_eq(LIBTABFS_ERR_NONE);
+
+                unsigned long int bytes_written = 0;
+                const char* data = "hello world";
+
+                err = libtabfs_write_file(
+                    gVolume, entry, 0, 11, (unsigned char*) data, &bytes_written
+                );
+                expect(err).to_eq(LIBTABFS_ERR_NONE);
+                expect(bytes_written).to_eq(11);
+
+                unsigned long int bytes_read = 0;
+                unsigned char buf[12];
+
+                err = libtabfs_read_file(
+                    gVolume, entry, 0, 11, buf, &bytes_read
+                );
+                expect(err).to_eq(LIBTABFS_ERR_NONE);
+                expect(bytes_read).to_eq(11);
+                expect( strncmp((char*) buf, "hello world", 11) == 0 ).to_eq(true);
+            });
+        });
+    });
+
     // TODO: add an test to confirm that entry creation automatically creates an new section
 
     explain("libtabfs_entrytab_traversetree", $ {
