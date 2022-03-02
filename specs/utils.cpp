@@ -1,7 +1,7 @@
 #include "./utils.hpp"
 #include <string.h>
 
-extern void* example_disk;
+extern uint8_t* example_disk;
 
 void write_i8(void* dest, uint8_t i) {
     memcpy(dest, &i, sizeof(uint8_t));
