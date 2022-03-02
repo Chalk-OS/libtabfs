@@ -686,7 +686,7 @@ libtabfs_error libtabfs_create_symlink(
 ) {
     NAME_CHECK
     
-    int pathlen = strlen(path);
+    int pathlen = libtabfs_strlen(path);
     if (pathlen > 62) { return LIBTABFS_ERR_ARGS; }
 
     libtabfs_entrytable_entry_t* entry = NULL;
