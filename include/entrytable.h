@@ -535,7 +535,7 @@ libtabfs_error libtabfs_create_socket(
 );
 
 /**
- * @brief creates an symlink
+ * @brief creates an continuos file
  * 
  * @param entrytable the entrytable to create in
  * @param name name of the directory to create
@@ -544,13 +544,56 @@ libtabfs_error libtabfs_create_socket(
  * @param userid owning user
  * @param groupid owning group
  * @param iskernel true if the continuous file is an kernel (type will then set to kernel (0xF))
+ * @param size size of the file in bytes
  * @param entry_out pointer which will be set to the new entry on success
  * @return LIBTABFS_ERR_NONE if the operation was successfull; other errorcode otherwise
  */
 libtabfs_error libtabfs_create_continuousfile(
     libtabfs_entrytable_t* entrytable, char* name, libtabfs_fileflags_t fileflags,
     libtabfs_time_t create_ts, unsigned int userid, unsigned int groupid,
-    bool iskernel, libtabfs_entrytable_entry_t** entry_out
+    bool iskernel, unsigned long int size, libtabfs_entrytable_entry_t** entry_out
+);
+
+//--------------------------------------------------------------------------------
+// Entry read / write (file only)
+//--------------------------------------------------------------------------------
+
+/**
+ * @brief reads data from a file into a buffer; this function is always synced
+ * 
+ * Note: this function assumes that an permission check was done before
+ * 
+ * @param volume the volume to operate on
+ * @param entry the entry to be read from; needs to be a file
+ * @param offset the byte offset into the file to start reading from
+ * @param len the length to read
+ * @param buffer buffer that will be filled with the data read; needs at least len bytes free
+ * @param bytesRead pointer that will be set to the count of bytes actually read
+ * @return LIBTABFS_ERR_NONE if the operation was successfull; other errorcode otherwise
+ */
+libtabfs_error libtabfs_read_file(
+    libtabfs_volume_t* volume,
+    libtabfs_entrytable_entry_t* entry, unsigned long int offset, unsigned long int len, unsigned char* buffer,
+    unsigned long int* bytesRead
+);
+
+/**
+ * @brief writes data to a file from a given buffer; this function is always synced
+ * 
+ * Note: this function assumes that an permission check was done before
+ * 
+ * @param volume the volume to operate on
+ * @param entry the entry to write to; needs to be a file
+ * @param offset the byte offset into the file to start writing
+ * @param len the length to be written
+ * @param buffer buffer that will be written; needs at least len bytes of data to write
+ * @param bytesWritten pointer that will be set to the count of bytes actually written
+ * @return LIBTABFS_ERR_NONE if the operation was successfull; other errorcode otherwise
+ */
+libtabfs_error libtabfs_write_file(
+    libtabfs_volume_t* volume,
+    libtabfs_entrytable_entry_t* entry, unsigned long int offset, unsigned long int len, unsigned char* buffer,
+    unsigned long int* bytesWritten
 );
 
 #endif // __LIBTABFS_ENTRYTABLE_H__

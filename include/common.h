@@ -46,6 +46,7 @@ typedef unsigned int libtabfs_error;
 #define LIBTABFS_ERR_NO_PERM        10
 #define LIBTABFS_ERR_DIR_FULL       11
 #define LIBTABFS_ERR_NOT_FOUND      12
+#define LIBTABFS_ERR_OFFSET_AFTER_FILE_END  13
 
 /**
  * @brief converts an error number into an error string

@@ -19,6 +19,7 @@ const char* libtabfs_errstr(libtabfs_error error) {
         case LIBTABFS_ERR_NO_PERM: return "no permission";
         case LIBTABFS_ERR_DIR_FULL: return "directory is full";
         case LIBTABFS_ERR_NOT_FOUND: return "could not find entry";
+        case LIBTABFS_ERR_OFFSET_AFTER_FILE_END: return "offset is after end of file";
         default: return "unknown error code";
     }
 }

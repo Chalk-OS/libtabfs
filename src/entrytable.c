@@ -4,6 +4,9 @@
 #include "volume.h"
 #include "bat.h"
 #include "entrytable.h"
+#ifdef LIBTABFS_DEBUG_PRINTF
+    #include <stdio.h>
+#endif
 
 //--------------------------------------------------------------------------------
 // Entrytable creation, sync & destroying
@@ -763,14 +766,29 @@ libtabfs_error libtabfs_create_socket(
 libtabfs_error libtabfs_create_continuousfile(
     libtabfs_entrytable_t* entrytable, char* name, libtabfs_fileflags_t fileflags,
     libtabfs_time_t create_ts, unsigned int userid, unsigned int groupid,
-    bool iskernel, libtabfs_entrytable_entry_t** entry_out
+    bool iskernel, size_t size, libtabfs_entrytable_entry_t** entry_out
 ) {
     NAME_CHECK
     if (entry_out == NULL) { return LIBTABFS_ERR_ARGS; }
 
+    // first allocate the blocks...
+    int blocks = size / entrytable->__volume->blockSize;
+    if ((size % entrytable->__volume->blockSize) != 0) {
+        blocks += 1;
+    }
+
+    libtabfs_lba_28_t fileContent_lba = libtabfs_bat_allocateChainedBlocks(entrytable->__volume, blocks);
+    if (LIBTABFS_IS_INVALID_LBA28(fileContent_lba)) {
+        return LIBTABFS_ERR_DEVICE_NOSPACE;
+    }
+    #ifdef LIBTABFS_DEBUG_PRINTF
+        printf("[libtabfs_create_continuousfile] fileContent_lba: 0x%X | blocks: %d | size: %lu\n", fileContent_lba, blocks, size);
+    #endif
+
     libtabfs_entrytable_entry_t* entry = NULL;
     libtabfs_error err = libtabfs_create_entry( entrytable, name, &entry);
     if (err != LIBTABFS_ERR_NONE) {
+        libtabfs_bat_freeChainedBlocks(entrytable->__volume, blocks, fileContent_lba);
         return err;
     }
 
@@ -784,5 +802,113 @@ libtabfs_error libtabfs_create_continuousfile(
 
     *entry_out = entry;
 
+    entry->data.lba_and_size.lba = fileContent_lba;
+    entry->data.lba_and_size.size = size;
+
+    // TODO: clear the allocated block to zero to prevent data leakage
+
     return LIBTABFS_ERR_NONE;
+}
+
+//--------------------------------------------------------------------------------
+// Entry read / write (file only)
+//--------------------------------------------------------------------------------
+
+libtabfs_error libtabfs_read_file(
+    libtabfs_volume_t* volume,
+    libtabfs_entrytable_entry_t* entry, unsigned long int offset, unsigned long int len, unsigned char* buffer,
+    unsigned long int* bytesRead
+) {
+    if (entry == NULL || buffer == NULL || bytesRead == NULL) {
+        return LIBTABFS_ERR_ARGS;
+    }
+
+    switch (entry->flags.type) {
+        case LIBTABFS_ENTRYTYPE_FILE_CONTINUOUS:
+        case LIBTABFS_ENTRYTYPE_KERNEL: {
+            // read from continuous file
+
+            libtabfs_lba_28_t fileContent_lba = entry->data.lba_and_size.lba;
+            unsigned int fileContent_size = entry->data.lba_and_size.size;
+            if (offset >= fileContent_size) {
+                *bytesRead = 0;
+                return LIBTABFS_ERR_OFFSET_AFTER_FILE_END;
+            }
+
+            int real_len = len;
+            if ((offset + real_len) > fileContent_size) {
+                real_len = fileContent_size - offset;
+            }
+
+            // NOTE: this use is a bit hacky, since it relays on the fact that the blocks are chained and the read method dont do
+            //       any sort of checks or similar
+            libtabfs_read_device(
+                volume->__dev_data,
+                fileContent_lba, volume->flags.absolute_lbas,
+                offset, buffer, real_len
+            );
+
+            *bytesRead = real_len;
+            return LIBTABFS_ERR_NONE;
+        }
+
+        case LIBTABFS_ENTRYTYPE_FILE_FAT:
+            return LIBTABFS_ERR_GENERIC;
+
+        case LIBTABFS_ENTRYTYPE_FILE_SEG:
+            return LIBTABFS_ERR_GENERIC;
+    
+        default:
+            return LIBTABFS_ERR_ARGS;
+    }
+
+}
+
+libtabfs_error libtabfs_write_file(
+    libtabfs_volume_t* volume,
+    libtabfs_entrytable_entry_t* entry, unsigned long int offset, unsigned long int len, unsigned char* buffer,
+    unsigned long int* bytesWritten
+) {
+    if (entry == NULL || buffer == NULL || bytesWritten == NULL) {
+        return LIBTABFS_ERR_ARGS;
+    }
+
+    switch (entry->flags.type) {
+        case LIBTABFS_ENTRYTYPE_FILE_CONTINUOUS:
+        case LIBTABFS_ENTRYTYPE_KERNEL: {
+            // write to continuous file
+
+            libtabfs_lba_28_t fileContent_lba = entry->data.lba_and_size.lba;
+            unsigned int fileContent_size = entry->data.lba_and_size.size;
+            if (offset >= fileContent_size) {
+                *bytesWritten = 0;
+                return LIBTABFS_ERR_OFFSET_AFTER_FILE_END;
+            }
+
+            int real_len = len;
+            if ((offset + real_len) > fileContent_size) {
+                real_len = fileContent_size - offset;
+            }
+
+            // NOTE: this use is a bit hacky, since it relays on the fact that the blocks are chained and the write method dont do
+            //       any sort of checks or similar
+            libtabfs_write_device(
+                volume->__dev_data,
+                fileContent_lba, volume->flags.absolute_lbas,
+                offset, buffer, real_len
+            );
+
+            *bytesWritten = real_len;
+            return LIBTABFS_ERR_NONE;
+        }
+
+        case LIBTABFS_ENTRYTYPE_FILE_FAT:
+            return LIBTABFS_ERR_GENERIC;
+
+        case LIBTABFS_ENTRYTYPE_FILE_SEG:
+            return LIBTABFS_ERR_GENERIC;
+
+        default:
+            return LIBTABFS_ERR_ARGS;
+    }
 }
