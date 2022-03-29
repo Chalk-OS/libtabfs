@@ -50,6 +50,10 @@ extern "C" {
         // fwrite(buffer, sizeof(uint8_t), bufferSize, (FILE*) dev_data);
     }
 
+    void libtabfs_set_range_device(void* dev_data, long long lba_address, bool is_absolute_lba, int offset, unsigned char b, int size) {
+        // no writing when inspecting...
+    }
+
 }
 
 struct option loptions[] = {
