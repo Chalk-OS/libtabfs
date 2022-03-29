@@ -59,6 +59,14 @@ extern "C" {
         my_device_write(*dev, lba_address, is_absolute_lba, offset, buffer, bufferSize);
     }
 
+    void libtabfs_set_range_device(void* dev_data, long long lba_address, bool is_absolute_lba, int offset, unsigned char b, int size) {
+        printf(
+            "set_range_device(dev=0x%x, lba=0x%lx, is_abs_lba=%s, off=0x%04x, b=0x%02x, sz=% 4d)\n",
+            *((dev_t*)dev_data), lba_address, (is_absolute_lba ? "yes" : "no "), offset, b, size
+        );
+        memset(example_disk + (lba_address * 512) + offset, b, size);
+    }
+
 }
 
 void init_example_disk() {

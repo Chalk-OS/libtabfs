@@ -36,6 +36,23 @@ extern void libtabfs_write_device(
 );
 
 /**
+ * @brief sets a byterange to an specific value. if offset is 0 and size is equal the block size,
+ * then this function sets an whole block to the specific value
+ * 
+ * @param dev_data the devicedata provided in the call to libtabfs_new_volume
+ * @param lba the lba to write to
+ * @param is_absolute_lba true if the lba is absolute; false otherwise (relative to partition or similar)
+ * @param offset offset into the lba block
+ * @param b value all bytes in the range should be set to
+ * @param size how many bytes should be set
+ */
+extern void libtabfs_set_range_device(
+    void* dev_data,
+    libtabfs_lba_28_t lba, bool is_absolute_lba, int offset,
+    unsigned char b, int size
+);
+
+/**
  * @brief gets the length of an zero-terminated string without the null-byte (0x00 or '\0')
  * 
  * @param str the string to get the length of

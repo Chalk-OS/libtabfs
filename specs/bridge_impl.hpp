@@ -16,6 +16,7 @@ extern "C" {
     void my_device_write(dev_t __linux_dev_t, long long lba_address, bool is_absolute_lba, int offset, void* buffer, int bufferSize);
     void libtabfs_read_device(void* dev_data, long long lba_address, bool is_absolute_lba, int offset, void* buffer, int bufferSize);
     void libtabfs_write_device(void* dev_data, long long lba_address, bool is_absolute_lba, int offset, void* buffer, int bufferSize);
+    void libtabfs_set_range_device(void* dev_data, long long lba_address, bool is_absolute_lba, int offset, unsigned char b, int size);
 }
 
 void init_example_disk();
