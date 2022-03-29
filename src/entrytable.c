@@ -786,7 +786,7 @@ libtabfs_error libtabfs_create_continuousfile(
     #endif
 
     libtabfs_entrytable_entry_t* entry = NULL;
-    libtabfs_error err = libtabfs_create_entry( entrytable, name, &entry);
+    libtabfs_error err = libtabfs_create_entry(entrytable, name, &entry);
     if (err != LIBTABFS_ERR_NONE) {
         libtabfs_bat_freeChainedBlocks(entrytable->__volume, blocks, fileContent_lba);
         return err;
@@ -805,7 +805,14 @@ libtabfs_error libtabfs_create_continuousfile(
     entry->data.lba_and_size.lba = fileContent_lba;
     entry->data.lba_and_size.size = size;
 
-    // TODO: clear the allocated block to zero to prevent data leakage
+    // zero the file content
+    for (int i = 0; i < blocks; i++) {
+        libtabfs_set_range_device(
+            entrytable->__volume->__dev_data,
+            fileContent_lba + i, entrytable->__volume->flags.absolute_lbas,
+            0, 0, entrytable->__volume->blockSize
+        );
+    }
 
     return LIBTABFS_ERR_NONE;
 }
