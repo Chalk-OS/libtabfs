@@ -11,6 +11,7 @@ extern "C" {
 #include <getopt.h>
 #include <vector>
 #include <functional>
+#include <time.h>
 
 extern "C" {
 
@@ -52,6 +53,12 @@ extern "C" {
 
     void libtabfs_set_range_device(void* dev_data, long long lba_address, bool is_absolute_lba, int offset, unsigned char b, int size) {
         // no writing when inspecting...
+    }
+
+    void libtabfs_get_current_time(long long* time) {
+        time_t now;
+        localtime(&now);
+        *time = now;
     }
 
 }
@@ -253,6 +260,15 @@ int main(int argc, char* argv[]) {
                                 while (tab != NULL) {
                                     dump_entrytable_region(tab);
                                     tab = libtabfs_entrytable_nextsection(tab);
+                                }
+                                break;
+                            }
+
+                            case LIBTABFS_ENTRYTYPE_FILE_FAT: {
+                                libtabfs_fat_t* fat = libtabfs_get_fat_section(volume, e->data.lba_and_size.lba, e->data.lba_and_size.size);
+                                while (fat != NULL) {
+                                    dump_fat_region(fat);
+                                    fat = libtabfs_get_fat_section(volume, fat->next_section, fat->next_size);
                                 }
                                 break;
                             }

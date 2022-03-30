@@ -3,13 +3,6 @@
 
 #include "./common.h"
 
-typedef union libtabfs_time {
-    unsigned char i8_data[8];
-    unsigned short i16_data[4];
-    unsigned int i32_data[2];
-    unsigned long long i64_data;
-} libtabfs_time_t;
-
 union libtabfs_entrytable_entry_data {
     unsigned char rawdata[8];
     struct {

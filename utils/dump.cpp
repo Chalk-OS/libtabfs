@@ -260,3 +260,25 @@ void dump_entrytable_region(libtabfs_entrytable_t* entrytable) {
         }
     }
 }
+
+void dump_fat_region(libtabfs_fat_t* fat) {
+    int entryCount = (fat->__byteSize / 16) - 1;
+    
+    printf("Dumping fat region laying on lba (0x%X)\n", fat->__lba);
+    printf("  - size: %d | entryCount: %d\n", fat->__byteSize, entryCount);
+
+    int last_valueable_entry = entryCount - 1;
+    while ( fat->entries[last_valueable_entry].index == 0 && fat->entries[last_valueable_entry].lba == 0 ) {
+        last_valueable_entry--;
+    }
+
+    for (int i = 0; i <= last_valueable_entry; i++) {
+        libtabfs_fat_entry_t* e = &( fat->entries[i] );
+        if (e->index == 0 && e->lba == 0) {
+            printf("  - entry %d: free\n", i);
+        }
+        else {
+            printf("  - entry %d: index=%d, lba=0x%X, modify_date=%d\n", i, e->index, e->lba, e->modify_date);
+        }
+    }
+}

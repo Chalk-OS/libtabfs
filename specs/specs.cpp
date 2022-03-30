@@ -252,6 +252,21 @@ describe(libtabfs, $ {
         });
     });
 
+    explain("libtabfs_create_fatfile", $ {
+        it("should create an file", _ {
+            libtabfs_entrytable_entry_t* entry = NULL;
+            libtabfs_error err = libtabfs_create_fatfile(
+                gVolume->__root_table, "myFatFile",
+                { .set_uid = true, .user = { .write = true } },
+                {}, 1, 2,
+                &entry
+            );
+            expect(err).to_eq(LIBTABFS_ERR_NONE);
+
+            libtabfs_entrytable_sync(gVolume->__root_table);
+        });
+    });
+
     explain("libtabfs_read_file", $ {
         explain("continuousfile", $ {
             it("should be able to read 128 out of 128 bytes", _ {
@@ -289,6 +304,42 @@ describe(libtabfs, $ {
                 expect(bytes_read).to_eq(127);
             });
         });
+        explain("fatfile", $ {
+            it("should be able to read 128 bytes", _ {
+                libtabfs_entrytable_entry_t* entry = NULL;
+                libtabfs_error err = libtabfs_entrytab_traversetree(
+                    gVolume->__root_table, "myFatFile", false,
+                    1, 2, &entry, NULL, NULL
+                );
+                expect(err).to_eq(LIBTABFS_ERR_NONE);
+
+                unsigned long int bytes_read = 0;
+                unsigned char buf[128];
+
+                err = libtabfs_read_file(
+                    gVolume, entry, 0, 128, buf, &bytes_read
+                );
+                expect(err).to_eq(LIBTABFS_ERR_NONE);
+                expect(bytes_read).to_eq(128);
+            });
+            it("should be able to read across blocks", _ {
+                libtabfs_entrytable_entry_t* entry = NULL;
+                libtabfs_error err = libtabfs_entrytab_traversetree(
+                    gVolume->__root_table, "myFatFile", false,
+                    1, 2, &entry, NULL, NULL
+                );
+                expect(err).to_eq(LIBTABFS_ERR_NONE);
+
+                unsigned long int bytes_read = 0;
+                unsigned char buf[128];
+
+                err = libtabfs_read_file(
+                    gVolume, entry, 512 - 64, 128, buf, &bytes_read
+                );
+                expect(err).to_eq(LIBTABFS_ERR_NONE);
+                expect(bytes_read).to_eq(128);
+            });
+        });
     });
 
     explain("libtabfs_write_file", $ {
@@ -318,6 +369,38 @@ describe(libtabfs, $ {
                 );
                 expect(err).to_eq(LIBTABFS_ERR_NONE);
                 expect(bytes_read).to_eq(11);
+                expect( strncmp((char*) buf, "hello world", 11) == 0 ).to_eq(true);
+            });
+        });
+        explain("fatfile", $ {
+            it("should be able to write 11 bytes", _ {
+                libtabfs_entrytable_entry_t* entry = NULL;
+                libtabfs_error err = libtabfs_entrytab_traversetree(
+                    gVolume->__root_table, "myFatFile", false,
+                    1, 2, &entry, NULL, NULL
+                );
+                expect(err).to_eq(LIBTABFS_ERR_NONE);
+
+                unsigned long int bytes_written = 0;
+                const char* data = "hello world";
+
+                err = libtabfs_write_file(
+                    gVolume, entry, 0, 11, (unsigned char*) data, &bytes_written
+                );
+                expect(err).to_eq(LIBTABFS_ERR_NONE);
+                expect(bytes_written).to_eq(11);
+
+                unsigned long int bytes_read = 0;
+                unsigned char buf[12];
+
+                err = libtabfs_read_file(
+                    gVolume, entry, 0, 11, buf, &bytes_read
+                );
+                expect(err).to_eq(LIBTABFS_ERR_NONE);
+                expect(bytes_read).to_eq(11);
+
+                printf("buf: %s", buf);
+
                 expect( strncmp((char*) buf, "hello world", 11) == 0 ).to_eq(true);
             });
         });
@@ -418,11 +501,14 @@ describe(libtabfs, $ {
     });
 });
 
+dev_t* gDevData = NULL;
+
 int main(int argc, char** argv) {
     init_example_disk();
 
     dev_t* dev_data = (dev_t*) calloc(1, sizeof(dev_data));
     *dev_data = 0x1234;
+    gDevData = dev_data;
 
     libtabfs_error err = libtabfs_new_volume(dev_data, 0, true, &gVolume);
     if (err != LIBTABFS_ERR_NONE) {
@@ -431,6 +517,14 @@ int main(int argc, char** argv) {
     }
 
     dump_mem((uint8_t*)gVolume->__bat_root, sizeof(libtabfs_bat));
+
+    atexit([] () {
+        printf("[INFO] Destroying volume so no leaks happen...\n");
+        libtabfs_destroy_volume(gVolume);
+        if (gDevData != NULL) {
+            free(gDevData);
+        }
+    });
 
     // run specs
     cxxspec::runSpecs(--argc, ++argv);

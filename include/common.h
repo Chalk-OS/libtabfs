@@ -12,6 +12,13 @@
 #define LIBTABFS_INT_SIZE  sizeof(int)
 #define LIBTABFS_LONG_LONG_SIZE    sizeof(long long)
 
+typedef union libtabfs_time {
+    unsigned char i8_data[8];
+    unsigned short i16_data[4];
+    unsigned int i32_data[2];
+    unsigned long long i64_data;
+} libtabfs_time_t;
+
 //===========================================================================
 // LBA types
 //===========================================================================
@@ -47,6 +54,7 @@ typedef unsigned int libtabfs_error;
 #define LIBTABFS_ERR_DIR_FULL       11
 #define LIBTABFS_ERR_NOT_FOUND      12
 #define LIBTABFS_ERR_OFFSET_AFTER_FILE_END  13
+#define LIBTABFS_ERR_FAT_FULL       14
 
 /**
  * @brief converts an error number into an error string

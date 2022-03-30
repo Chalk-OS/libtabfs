@@ -1,6 +1,7 @@
 #include "./bridge_impl.hpp"
 #include <string.h>
 #include <stdio.h>
+#include <time.h>
 #include "./utils.hpp"
 
 extern "C" {
@@ -31,6 +32,7 @@ extern "C" {
     }
 
     uint8_t* example_disk;
+    const int example_disk_lbacount = 16;
 
     void my_device_read(dev_t __linux_dev_t, long long lba_address, bool is_absolute_lba, int offset, void* buffer, int bufferSize) {
         printf(
@@ -51,15 +53,30 @@ extern "C" {
     }
 
     void libtabfs_read_device(void* dev_data, long long lba_address, bool is_absolute_lba, int offset, void* buffer, int bufferSize) {
+        if (lba_address >= example_disk_lbacount) {
+            printf("ERROR: libtabfs_read_device cannot read from lba 0x%lx: out of range\n", lba_address);
+            exit(EXIT_FAILURE);
+        }
+
         dev_t* dev = (dev_t*) dev_data;
         my_device_read(*dev, lba_address, is_absolute_lba, offset, buffer, bufferSize);
     }
     void libtabfs_write_device(void* dev_data, long long lba_address, bool is_absolute_lba, int offset, void* buffer, int bufferSize) {
+        if (lba_address >= example_disk_lbacount) {
+            printf("ERROR: libtabfs_write_device cannot write to lba 0x%lx: out of range\n", lba_address);
+            exit(EXIT_FAILURE);
+        }
+
         dev_t* dev = (dev_t*) dev_data;
         my_device_write(*dev, lba_address, is_absolute_lba, offset, buffer, bufferSize);
     }
 
     void libtabfs_set_range_device(void* dev_data, long long lba_address, bool is_absolute_lba, int offset, unsigned char b, int size) {
+        if (lba_address >= example_disk_lbacount) {
+            printf("ERROR: libtabfs_set_range_device cannot write to lba 0x%lx: out of range\n", lba_address);
+            exit(EXIT_FAILURE);
+        }
+
         printf(
             "set_range_device(dev=0x%x, lba=0x%lx, is_abs_lba=%s, off=0x%04x, b=0x%02x, sz=% 4d)\n",
             *((dev_t*)dev_data), lba_address, (is_absolute_lba ? "yes" : "no "), offset, b, size
@@ -67,11 +84,18 @@ extern "C" {
         memset(example_disk + (lba_address * 512) + offset, b, size);
     }
 
+    void libtabfs_get_current_time(long long* time) {
+        time_t now;
+        localtime(&now);
+        *time = now;
+    }
+
 }
 
 void init_example_disk() {
     // init the example disk
-    example_disk = (uint8_t*) calloc( 512 * 10, sizeof(uint8_t) );
+    example_disk = (uint8_t*) calloc( 512 * example_disk_lbacount, sizeof(uint8_t) );
+    printf("Initialize example disk with %d blocks...\n", example_disk_lbacount);
 
     /**
      * layout:

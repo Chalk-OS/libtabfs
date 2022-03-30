@@ -52,6 +52,7 @@ struct libtabfs_volume {
     struct libtabfs_bat* __bat_root;
     struct libtabfs_entrytable* __root_table;
     libtabfs_linkedlist_t* __table_cache;
+    libtabfs_linkedlist_t* __fat_cache;
 } LIBTABFS_PACKED;
 typedef struct libtabfs_volume libtabfs_volume_t;
 

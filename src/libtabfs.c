@@ -20,6 +20,7 @@ const char* libtabfs_errstr(libtabfs_error error) {
         case LIBTABFS_ERR_DIR_FULL: return "directory is full";
         case LIBTABFS_ERR_NOT_FOUND: return "could not find entry";
         case LIBTABFS_ERR_OFFSET_AFTER_FILE_END: return "offset is after end of file";
+        case LIBTABFS_ERR_FAT_FULL: return "file allocation table is full";
         default: return "unknown error code";
     }
 }

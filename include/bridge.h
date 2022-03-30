@@ -104,6 +104,13 @@ extern void* libtabfs_alloc(int size);
  */
 extern void libtabfs_free(void* ptr, int size);
 
+/**
+ * @brief fills the provided parameter with the current time
+ * 
+ * @param time structure to be filled in; always non-NULL
+ */
+extern void libtabfs_get_current_time(libtabfs_time_t* time);
+
 #ifndef libtabfs_realloc
     void* libtabfs_realloc(void* old, int old_size, int new_size);
     #define LIBTABFS_DEFAULT_REALLOC

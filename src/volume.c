@@ -4,6 +4,7 @@
 #include "volume.h"
 #include "bat.h"
 #include "entrytable.h"
+#include "fatfile.h"
 
 const char* libtabfs_magic = "TABFS-28\0\0\0\0\0\0\0";
 
@@ -48,6 +49,7 @@ libtabfs_error libtabfs_new_volume(void* dev_data, long long lba_address, bool a
     volume->__dev_data = dev_data;
     volume->__lba = LIBTABFS_LBA48_TO_LBA28(header.info_LBA);
     volume->__table_cache = libtabfs_linkedlist_create( libtabfs_entrytable_cachefree_callback );
+    volume->__fat_cache = libtabfs_linkedlist_create( libtabfs_fat_cachefree_callback );
 
     *volume_out = volume;
 
@@ -115,6 +117,9 @@ void libtabfs_destroy_volume(libtabfs_volume_t* volume) {
 
     // free all tables; the root table is also inside our cache!
     libtabfs_linkedlist_destroy(volume->__table_cache);
+
+    // free all fats
+    libtabfs_linkedlist_destroy(volume->__fat_cache);
 
     libtabfs_free(volume, sizeof(struct libtabfs_volume));
 }

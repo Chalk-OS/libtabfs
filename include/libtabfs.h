@@ -6,5 +6,6 @@
 #include "./volume.h"
 #include "./bat.h"
 #include "./entrytable.h"
+#include "./fatfile.h"
 
 #endif

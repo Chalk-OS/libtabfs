@@ -5,6 +5,7 @@
 
 extern "C" {
     extern uint8_t* example_disk;
+    extern const int example_disk_lbacount;
 
     void* libtabfs_alloc(int size);
     void libtabfs_free(void* ptr, int size);
@@ -17,6 +18,7 @@ extern "C" {
     void libtabfs_read_device(void* dev_data, long long lba_address, bool is_absolute_lba, int offset, void* buffer, int bufferSize);
     void libtabfs_write_device(void* dev_data, long long lba_address, bool is_absolute_lba, int offset, void* buffer, int bufferSize);
     void libtabfs_set_range_device(void* dev_data, long long lba_address, bool is_absolute_lba, int offset, unsigned char b, int size);
+    void libtabfs_get_current_time(long long* time);
 }
 
 void init_example_disk();

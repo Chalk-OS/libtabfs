@@ -821,6 +821,8 @@ libtabfs_error libtabfs_create_continuousfile(
 // Entry read / write (file only)
 //--------------------------------------------------------------------------------
 
+#include "./fatfile.h"
+
 libtabfs_error libtabfs_read_file(
     libtabfs_volume_t* volume,
     libtabfs_entrytable_entry_t* entry, unsigned long int offset, unsigned long int len, unsigned char* buffer,
@@ -860,7 +862,7 @@ libtabfs_error libtabfs_read_file(
         }
 
         case LIBTABFS_ENTRYTYPE_FILE_FAT:
-            return LIBTABFS_ERR_GENERIC;
+            return libtabfs_fatfile_read(volume, entry, offset, len, buffer, bytesRead);
 
         case LIBTABFS_ENTRYTYPE_FILE_SEG:
             return LIBTABFS_ERR_GENERIC;
@@ -910,7 +912,7 @@ libtabfs_error libtabfs_write_file(
         }
 
         case LIBTABFS_ENTRYTYPE_FILE_FAT:
-            return LIBTABFS_ERR_GENERIC;
+            return libtabfs_fatfile_write(volume, entry, offset, len, buffer, bytesWritten);
 
         case LIBTABFS_ENTRYTYPE_FILE_SEG:
             return LIBTABFS_ERR_GENERIC;

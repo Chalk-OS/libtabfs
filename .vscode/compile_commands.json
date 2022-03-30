@@ -1,33 +1,38 @@
 [
 {
   "directory": "/home/mai/projects/osdev/tabfs/libtabfs",
-  "arguments": ["/usr/bin/gcc", "-c", "-m64", "-Iutils", "-Iinclude", "-o", "build/.objs/tabfs_inspect/linux/x86_64/debug/utils/tabfs_inspect.cpp.o", "utils/tabfs_inspect.cpp"],
-  "file": "utils/tabfs_inspect.cpp"
+  "arguments": ["/usr/bin/gcc", "-c", "-m64", "-Iinclude", "-DDEBUG", "-DLIBTABFS_DEBUG_PRINTF", "-o", "build/.objs/local_libtabfs/linux/x86_64/debug/src/fatfile.c.o", "src/fatfile.c"],
+  "file": "src/fatfile.c"
 },
 {
   "directory": "/home/mai/projects/osdev/tabfs/libtabfs",
-  "arguments": ["/usr/bin/gcc", "-c", "-m64", "-Iutils", "-Iinclude", "-o", "build/.objs/tabfs_inspect/linux/x86_64/debug/utils/dump.cpp.o", "utils/dump.cpp"],
-  "file": "utils/dump.cpp"
+  "arguments": ["/usr/bin/gcc", "-c", "-m64", "-Iinclude", "-DDEBUG", "-DLIBTABFS_DEBUG_PRINTF", "-o", "build/.objs/local_libtabfs/linux/x86_64/debug/src/bat.c.o", "src/bat.c"],
+  "file": "src/bat.c"
 },
 {
   "directory": "/home/mai/projects/osdev/tabfs/libtabfs",
-  "arguments": ["/usr/bin/gcc", "-c", "-m64", "-Iutils", "-Iinclude", "-o", "build/.objs/specs/linux/x86_64/debug/specs/utils.cpp.o", "specs/utils.cpp"],
-  "file": "specs/utils.cpp"
+  "arguments": ["/usr/bin/gcc", "-c", "-m64", "-Iinclude", "-DDEBUG", "-DLIBTABFS_DEBUG_PRINTF", "-o", "build/.objs/local_libtabfs/linux/x86_64/debug/src/libtabfs.c.o", "src/libtabfs.c"],
+  "file": "src/libtabfs.c"
 },
 {
   "directory": "/home/mai/projects/osdev/tabfs/libtabfs",
-  "arguments": ["/usr/bin/gcc", "-c", "-m64", "-Iutils", "-Iinclude", "-o", "build/.objs/specs/linux/x86_64/debug/specs/bridge_impl.cpp.o", "specs/bridge_impl.cpp"],
-  "file": "specs/bridge_impl.cpp"
+  "arguments": ["/usr/bin/gcc", "-c", "-m64", "-Iinclude", "-DDEBUG", "-DLIBTABFS_DEBUG_PRINTF", "-o", "build/.objs/local_libtabfs/linux/x86_64/debug/src/linkedlist.c.o", "src/linkedlist.c"],
+  "file": "src/linkedlist.c"
 },
 {
   "directory": "/home/mai/projects/osdev/tabfs/libtabfs",
-  "arguments": ["/usr/bin/gcc", "-c", "-m64", "-Iutils", "-Iinclude", "-o", "build/.objs/specs/linux/x86_64/debug/specs/specs.cpp.o", "specs/specs.cpp"],
-  "file": "specs/specs.cpp"
+  "arguments": ["/usr/bin/gcc", "-c", "-m64", "-Iinclude", "-DDEBUG", "-DLIBTABFS_DEBUG_PRINTF", "-o", "build/.objs/local_libtabfs/linux/x86_64/debug/src/volume.c.o", "src/volume.c"],
+  "file": "src/volume.c"
 },
 {
   "directory": "/home/mai/projects/osdev/tabfs/libtabfs",
-  "arguments": ["/usr/bin/gcc", "-c", "-m64", "-Iutils", "-Iinclude", "-o", "build/.objs/specs/linux/x86_64/debug/utils/dump.cpp.o", "utils/dump.cpp"],
-  "file": "utils/dump.cpp"
+  "arguments": ["/usr/bin/gcc", "-c", "-m64", "-Iinclude", "-DDEBUG", "-DLIBTABFS_DEBUG_PRINTF", "-o", "build/.objs/local_libtabfs/linux/x86_64/debug/src/entrytable.c.o", "src/entrytable.c"],
+  "file": "src/entrytable.c"
+},
+{
+  "directory": "/home/mai/projects/osdev/tabfs/libtabfs",
+  "arguments": ["/usr/bin/gcc", "-c", "-m64", "-Iinclude", "-DDEBUG", "-o", "build/.objs/libtabfs/linux/x86_64/debug/src/fatfile.c.o", "src/fatfile.c"],
+  "file": "src/fatfile.c"
 },
 {
   "directory": "/home/mai/projects/osdev/tabfs/libtabfs",
@@ -53,4 +58,34 @@
   "directory": "/home/mai/projects/osdev/tabfs/libtabfs",
   "arguments": ["/usr/bin/gcc", "-c", "-m64", "-Iinclude", "-DDEBUG", "-o", "build/.objs/libtabfs/linux/x86_64/debug/src/entrytable.c.o", "src/entrytable.c"],
   "file": "src/entrytable.c"
+},
+{
+  "directory": "/home/mai/projects/osdev/tabfs/libtabfs",
+  "arguments": ["/usr/bin/clang", "-c", "-Qunused-arguments", "-m64", "-Iutils", "-Iinclude", "-o", "build/.objs/specs/linux/x86_64/debug/specs/utils.cpp.o", "specs/utils.cpp"],
+  "file": "specs/utils.cpp"
+},
+{
+  "directory": "/home/mai/projects/osdev/tabfs/libtabfs",
+  "arguments": ["/usr/bin/clang", "-c", "-Qunused-arguments", "-m64", "-Iutils", "-Iinclude", "-o", "build/.objs/specs/linux/x86_64/debug/specs/bridge_impl.cpp.o", "specs/bridge_impl.cpp"],
+  "file": "specs/bridge_impl.cpp"
+},
+{
+  "directory": "/home/mai/projects/osdev/tabfs/libtabfs",
+  "arguments": ["/usr/bin/clang", "-c", "-Qunused-arguments", "-m64", "-Iutils", "-Iinclude", "-o", "build/.objs/specs/linux/x86_64/debug/specs/specs.cpp.o", "specs/specs.cpp"],
+  "file": "specs/specs.cpp"
+},
+{
+  "directory": "/home/mai/projects/osdev/tabfs/libtabfs",
+  "arguments": ["/usr/bin/clang", "-c", "-Qunused-arguments", "-m64", "-Iutils", "-Iinclude", "-o", "build/.objs/specs/linux/x86_64/debug/utils/dump.cpp.o", "utils/dump.cpp"],
+  "file": "utils/dump.cpp"
+},
+{
+  "directory": "/home/mai/projects/osdev/tabfs/libtabfs",
+  "arguments": ["/usr/bin/gcc", "-c", "-m64", "-Iutils", "-Iinclude", "-o", "build/.objs/tabfs_inspect/linux/x86_64/debug/utils/tabfs_inspect.cpp.o", "utils/tabfs_inspect.cpp"],
+  "file": "utils/tabfs_inspect.cpp"
+},
+{
+  "directory": "/home/mai/projects/osdev/tabfs/libtabfs",
+  "arguments": ["/usr/bin/gcc", "-c", "-m64", "-Iutils", "-Iinclude", "-o", "build/.objs/tabfs_inspect/linux/x86_64/debug/utils/dump.cpp.o", "utils/dump.cpp"],
+  "file": "utils/dump.cpp"
 }]
