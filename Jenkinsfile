@@ -14,7 +14,7 @@ pipeline {
                 sh 'PREFIX=$(pwd)/dist make install'
                 sh 'tar -cvf release.tar ./dist'
                 archiveArtifacts artifacts: 'release.tar', followSymlinks: false
-                archiveArtifacts artifacts: 'dist/libtabfs_inspect', followSymlinks: false
+                archiveArtifacts artifacts: 'dist/bin/libtabfs_inspect', followSymlinks: false
             }
         }
     }
