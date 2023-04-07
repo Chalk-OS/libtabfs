@@ -1,16 +1,21 @@
 #include "dump.hpp"
 #include <stdio.h>
 #include <cctype>
+#include <math.h>
 
 void dump_mem(uint8_t* mem, int size) {
     printf("\e[32m---- 00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F\e[0m\n");
-    for (int i = 0; i < (size / 16); i++) {
+    for (int i = 0; i < ceil(size / 16.0); i++) {
         printf("\e[32m%04x\e[0m ", i * 0x10);
         for (int j = 0; j < 16; j++) {
-            printf("%02x ", mem[i * 16 + j]);
+            int k = i * 16 + j;
+            if (k >= size) { printf("   "); continue; }
+            printf("%02x ", mem[k]);
         }
         for (int j = 0; j < 16; j++) {
-            char c = mem[i * 16 + j];
+            int k = i * 16 + j;
+            if (k >= size) { putchar(' '); continue; }
+            char c = mem[k];
             if (std::isprint(c)) {
                 printf("%c", c);
             }
