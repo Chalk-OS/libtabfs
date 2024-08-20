@@ -8,9 +8,9 @@
 #include "./entrytable.h"
 #include "./fatfile.h"
 
-#define LIBTABFS_VERSION "v0.2"
+#define LIBTABFS_VERSION "v0.3"
 #define LIBTABFS_VERSION_MAJOR 0
-#define LIBTABFS_VERSION_MINOR 2
+#define LIBTABFS_VERSION_MINOR 3
 
 /**
  * @brief Returns the version of libtabfs provided by the library
