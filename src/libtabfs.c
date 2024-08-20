@@ -3,6 +3,13 @@
 #include "volume.h"
 #include "bat.h"
 #include "entrytable.h"
+#include "libtabfs.h"
+
+const char* libtabfs_getVersion(int* major, int* minor) {
+    if (major != NULL) { *major = LIBTABFS_VERSION_MAJOR; }
+    if (minor != NULL) { *minor = LIBTABFS_VERSION_MINOR; }
+    return LIBTABFS_VERSION;
+}
 
 const char* libtabfs_errstr(libtabfs_error error) {
     switch (error) {
