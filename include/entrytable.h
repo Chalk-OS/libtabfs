@@ -68,7 +68,7 @@ struct libtabfs_entrytable_longname {
         } flags;
         unsigned char rawflags;
     };
-    unsigned char name[63];
+    char name[63];
 } LIBTABFS_PACKED;
 typedef struct libtabfs_entrytable_longname libtabfs_entrytable_longname_t;
 
