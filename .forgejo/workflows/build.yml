@@ -1,0 +1,35 @@
+on: [push]
+
+jobs:
+  build:
+    runs-on: docker
+    container:
+      image: alpine:3.20
+    steps:
+      - name: Prepare system
+        run: apk update && apk add build-base nodejs git
+
+      - uses: actions/checkout@v4
+
+      - name: Build
+        id: build
+        run: |
+          VERSION=$(grep -oP '(?<=LIBTABFS_VERSION ")v[0-9\.]+' ./include/libtabfs.h)
+          echo "Found version: $VERSION"
+          echo version="$VERSION" >> $GITHUB_OUTPUT
+
+          make release
+          mkdir dist
+          PREFIX=$(pwd)/dist make install
+          cd ./dist && tar -cvJf ../libtabfs_$VERSION.tar.xz *
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: libtabfs_${{ steps.build.outputs.version }}.tar.xz
+          path: ./libtabfs_${{ steps.build.outputs.version }}.tar.xz
+
+      - if: startsWith(github.ref, 'refs/tags/')
+        uses: actions/action-gh-release@v2
+        with:
+          files: |
+            libtabfs_${{ steps.build.outputs.version }}.tar.xz
