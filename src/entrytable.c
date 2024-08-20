@@ -14,6 +14,8 @@
 
 #define LIBTABFS_ENTRYTABLE_DATAOFFSET  (LIBTABFS_PTR_SIZE) + sizeof(unsigned int) + sizeof(libtabfs_lba_28_t)
 
+#define LIBTABFS_GET_TABLEINFO(table)   ((libtabfs_entrytable_tableinfo_t*) &( (table)->entries[0] ))
+
 libtabfs_entrytable_t* libtabfs_read_entrytable(libtabfs_volume_t* volume, libtabfs_lba_28_t lba, unsigned int size) {
 
     libtabfs_entrytable_t* entrytable = (libtabfs_entrytable_t*) libtabfs_alloc(LIBTABFS_ENTRYTABLE_DATAOFFSET + size);
@@ -54,7 +56,7 @@ libtabfs_entrytable_t* libtabfs_create_entrytable(
     entrytable->__byteSize = size;
 
     // configure tabinfo entry
-    libtabfs_entrytable_tableinfo_t* tabinfo = &( entrytable->entries[0] );
+    libtabfs_entrytable_tableinfo_t* tabinfo = LIBTABFS_GET_TABLEINFO(entrytable);
     tabinfo->flags.type = LIBTABFS_ENTRYTYPE_TABLEINFO;
 
     // set the parent information
@@ -160,7 +162,7 @@ libtabfs_entrytable_t* libtabfs_find_cached_entrytable(libtabfs_volume_t* volume
 
 libtabfs_entrytable_t* libtabfs_entrytable_get_first_section(libtabfs_entrytable_t* section) {
     while (section != NULL) {
-        libtabfs_entrytable_tableinfo_t* tabinfo = &( section->entries[0] );
+        libtabfs_entrytable_tableinfo_t* tabinfo = LIBTABFS_GET_TABLEINFO(section);
         if (tabinfo->prev_size != 0 && !LIBTABFS_IS_INVALID_LBA28(tabinfo->prev_lba)) {
             section = libtabfs_get_entrytable(section->__volume, tabinfo->prev_lba, tabinfo->prev_size);
         }
@@ -172,7 +174,7 @@ libtabfs_entrytable_t* libtabfs_entrytable_get_first_section(libtabfs_entrytable
 }
 
 libtabfs_entrytable_t* libtabfs_entrytable_get_parent(libtabfs_entrytable_t* section) {
-    libtabfs_entrytable_tableinfo_t* tabinfo = &( section->entries[0] );
+    libtabfs_entrytable_tableinfo_t* tabinfo = LIBTABFS_GET_TABLEINFO(section);
     if (tabinfo->parent_size != 0 && !LIBTABFS_IS_INVALID_LBA28(tabinfo->parent_lba)) {
         return libtabfs_get_entrytable(section->__volume, tabinfo->parent_lba, tabinfo->parent_size);
     }
@@ -182,7 +184,7 @@ libtabfs_entrytable_t* libtabfs_entrytable_get_parent(libtabfs_entrytable_t* sec
 }
 
 libtabfs_entrytable_t* libtabfs_entrytable_nextsection(libtabfs_entrytable_t* section) {
-    libtabfs_entrytable_tableinfo_t* tabinfo = &( section->entries[0] );
+    libtabfs_entrytable_tableinfo_t* tabinfo = LIBTABFS_GET_TABLEINFO(section);
     if (tabinfo->next_size != 0 && !LIBTABFS_IS_INVALID_LBA28(tabinfo->next_lba)) {
         return libtabfs_get_entrytable(section->__volume, tabinfo->next_lba, tabinfo->next_size);
     }
@@ -211,7 +213,7 @@ libtabfs_error libtabfs_entrytab_findfree(
         }
     }
 
-    libtabfs_entrytable_tableinfo_t* tabinfo = &( entrytable->entries[0] );
+    libtabfs_entrytable_tableinfo_t* tabinfo = LIBTABFS_GET_TABLEINFO(entrytable);
 
     if (tabinfo->next_size != 0 && !LIBTABFS_IS_INVALID_LBA28(tabinfo->next_lba)) {
         // try to find in next section
@@ -236,7 +238,7 @@ libtabfs_error libtabfs_entrytab_findfree(
         tabinfo->next_lba = next_section_lba;
         tabinfo->next_size = next_section_size;
 
-        libtabfs_entrytable_tableinfo_t* nextsection_tabinfo = &( next_section->entries[0] );
+        libtabfs_entrytable_tableinfo_t* nextsection_tabinfo = LIBTABFS_GET_TABLEINFO(next_section);
         nextsection_tabinfo->prev_lba = entrytable->__lba;
         nextsection_tabinfo->prev_size = entrytable->__byteSize;
 
@@ -263,7 +265,7 @@ libtabfs_error libtabfs_entrytable_count_entries(libtabfs_entrytable_t* entrytab
         }
     }
 
-    libtabfs_entrytable_tableinfo_t* tabinfo = &( entrytable->entries[0] );
+    libtabfs_entrytable_tableinfo_t* tabinfo = LIBTABFS_GET_TABLEINFO(entrytable);
     if (tabinfo->next_size != 0 && !LIBTABFS_IS_INVALID_LBA28(tabinfo->next_lba)) {
         libtabfs_entrytable_t* next_section = libtabfs_get_entrytable(entrytable->__volume, tabinfo->next_lba, tabinfo->next_size);
         count += libtabfs_entrytable_count_entries(next_section, skip_longnames);
@@ -403,7 +405,7 @@ libtabfs_error libtabfs_entrytab_traversetree(
                 // was '../' which means the parent directory;
                 relative_path += 3;
 
-                libtabfs_entrytable_tableinfo_t* tabinf = &( entrytable->entries[0] );
+                libtabfs_entrytable_tableinfo_t* tabinf = LIBTABFS_GET_TABLEINFO(entrytable);
                 if (tabinf->parent_size == 0 || LIBTABFS_IS_INVALID_LBA28(tabinf->parent_lba)) {
                     // we are already at the root... ignore any further try to go beyond
                     continue;
