@@ -270,7 +270,8 @@ libtabfs_error libtabfs_entrytable_count_entries(libtabfs_entrytable_t* entrytab
         libtabfs_entrytable_t* next_section = libtabfs_get_entrytable(entrytable->__volume, tabinfo->next_lba, tabinfo->next_size);
         count += libtabfs_entrytable_count_entries(next_section, skip_longnames);
     }
-    return LIBTABFS_ERR_NONE;
+
+    return count;
 }
 
 libtabfs_error libtabfs_entry_get_name(libtabfs_volume_t* volume, libtabfs_entrytable_entry_t* entry, char** name_out) {
