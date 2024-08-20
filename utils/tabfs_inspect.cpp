@@ -55,10 +55,8 @@ extern "C" {
         // no writing when inspecting...
     }
 
-    void libtabfs_get_current_time(long long* time) {
-        time_t now;
-        localtime(&now);
-        *time = now;
+    void libtabfs_get_current_time(long long* _time) {
+        *_time = time(nullptr);
     }
 
 }
