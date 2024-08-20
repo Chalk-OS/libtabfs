@@ -37,10 +37,10 @@ void dump_bat_region(libtabfs_bat_t* bat) {
     printf("  - lba of next region: 0x%x\n", bat->next_bat);
 
     long count = libtabfs_bat_getcount(bat);
-    printf("  - lba count: 0x%x / %d\n", count, count);
+    printf("  - lba count: 0x%lx / %ld\n", count, count);
 
     long long start_lba = libtabfs_bat_getstart(bat);
-    printf("  - lba range: 0x%x - 0x%x\n", start_lba, start_lba + count - 1);
+    printf("  - lba range: 0x%llx - 0x%llx\n", start_lba, start_lba + count - 1);
 
     printf("  - data:\n");
     // dump_mem(bat->data, libtabfs_bat_getDatabyteCount(bat));
@@ -127,7 +127,7 @@ void dump_entrytable_entry(libtabfs_entrytable_entry_t* e, libtabfs_volume_t* vo
             ACL_STR(LIBTABFS_TAB_ENTRY_ACLOTH(e))
         );
         printf(
-            "  - c_time: %ld | m_time: %ld | a_time: %ld\n",
+            "  - c_time: %lld | m_time: %lld | a_time: %lld\n",
             e->create_ts.i64_data, e->modify_ts.i64_data, e->access_ts.i64_data
         );
 
@@ -220,7 +220,7 @@ void dump_entrytable_region(libtabfs_entrytable_t* entrytable) {
                 ACL_STR(LIBTABFS_TAB_ENTRY_ACLOTH(e))
             );
             printf(
-                "    - c_time: %ld | m_time: %ld | a_time: %ld\n",
+                "    - c_time: %lld | m_time: %lld | a_time: %lld\n",
                 e->create_ts.i64_data, e->modify_ts.i64_data, e->access_ts.i64_data
             );
 
@@ -283,7 +283,7 @@ void dump_fat_region(libtabfs_fat_t* fat) {
             printf("  - entry %d: free\n", i);
         }
         else {
-            printf("  - entry %d: index=%d, lba=0x%X, modify_date=%d\n", i, e->index, e->lba, e->modify_date);
+            printf("  - entry %d: index=%d, lba=0x%X, modify_date=%lld\n", i, e->index, e->lba, e->modify_date.i64_data);
         }
     }
 }
