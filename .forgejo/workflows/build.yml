@@ -7,7 +7,7 @@ jobs:
       image: alpine:3.20
     steps:
       - name: Prepare system
-        run: apk update && apk add build-base grep nodejs git
+        run: apk update && apk add build-base grep tar xz nodejs git
 
       - uses: actions/checkout@v4
 
