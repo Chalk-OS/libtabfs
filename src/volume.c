@@ -48,8 +48,8 @@ libtabfs_error libtabfs_new_volume(void* dev_data, long long lba_address, bool a
     // store the device arguments into the volume
     volume->__dev_data = dev_data;
     volume->__lba = LIBTABFS_LBA48_TO_LBA28(header.info_LBA);
-    volume->__table_cache = libtabfs_linkedlist_create( libtabfs_entrytable_cachefree_callback );
-    volume->__fat_cache = libtabfs_linkedlist_create( libtabfs_fat_cachefree_callback );
+    volume->__table_cache = libtabfs_linkedlist_create( (libtabfs_free_callback) libtabfs_entrytable_cachefree_callback );
+    volume->__fat_cache = libtabfs_linkedlist_create( (libtabfs_free_callback) libtabfs_fat_cachefree_callback );
 
     *volume_out = volume;
 
