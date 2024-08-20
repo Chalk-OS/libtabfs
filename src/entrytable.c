@@ -282,7 +282,7 @@ libtabfs_error libtabfs_entry_get_name(libtabfs_volume_t* volume, libtabfs_entry
     }
 
     libtabfs_entrytable_t* tab = libtabfs_get_entrytable(volume, entry->longname_data.longname_lba, entry->longname_data.longname_lba_size);
-    libtabfs_entrytable_longname_t* lne = &( tab->entries[entry->longname_data.longname_offset] );
+    libtabfs_entrytable_longname_t* lne = (libtabfs_entrytable_longname_t*) &( tab->entries[entry->longname_data.longname_offset] );
     if (lne->flags.type != LIBTABFS_ENTRYTYPE_LONGNAME) {
         return LIBTABFS_ERR_GENERIC;
     }
@@ -321,7 +321,7 @@ libtabfs_error libtabfs_entrytab_findentry(
                 libtabfs_entrytable_t* lne_entrytable = libtabfs_get_entrytable(
                     entrytable->__volume, entry->longname_data.longname_lba, entry->longname_data.longname_lba_size
                 );
-                libtabfs_entrytable_longname_t* lne = &( lne_entrytable->entries[ entry->longname_data.longname_offset ] );
+                libtabfs_entrytable_longname_t* lne = (libtabfs_entrytable_longname_t*) &( lne_entrytable->entries[ entry->longname_data.longname_offset ] );
                 if (lne->flags.type != LIBTABFS_ENTRYTYPE_LONGNAME) {
                     return LIBTABFS_ERR_GENERIC;
                 }
@@ -375,7 +375,7 @@ libtabfs_error libtabfs_entrytab_getsymlinktarget(
             break;
         }
     }
-    libtabfs_entrytable_longname_t* lne_path = &( lne_entrytable->entries[ offset ] );
+    libtabfs_entrytable_longname_t* lne_path = (libtabfs_entrytable_longname_t*) &( lne_entrytable->entries[ offset ] );
 
     libtabfs_entrytable_t* tab = NULL;
     // if the path starts with an '/', its an absolute path!
